@@ -6,10 +6,20 @@ namespace HiveOnline.GameAssets
 {
     class Board : IBoard
     {
+        List<Tile> _tiles = new List<Tile>();
+        Tile _selectedTile;
+        Layout _layout;
+
+
+        public Board ()
+        {
+            _tiles = new List<Tile>();
+            _layout = new Layout(Layout.flat, new Point(50, 50), new Point(500, 500));
+        }
 
         public void Move(Tile piece, Tile position)
         {
-            if (!piece.CanMoveTo(this, position))
+            if (!piece.CanMoveTo(this, position.Location))
                 throw new PlayException("Illegal Move!");
 
             piece.Location = position.Location;
