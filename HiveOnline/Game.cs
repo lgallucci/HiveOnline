@@ -1,9 +1,7 @@
-﻿using HiveClient;
+﻿using HiveContracts;
 using HiveGraphics;
 using HiveOnline.GameAssets;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace HiveOnline
 {
@@ -43,10 +41,10 @@ namespace HiveOnline
                     double elapsedTicks = elapsedTime.Ticks;
 
                     // Handle Frame Update
-                    if (!_gameEngine.Run(_board))
+                    if (!_gameEngine.Run(ref _board))
                         _running = false;
 
-                    if (!_graphicsEngine.Draw(framesPerSecond, _board))
+                    if (!_graphicsEngine.Draw(framesPerSecond, _board, GetGameStatus()))
                         _running = false;
 
                     frameTimer += elapsedTime;
@@ -60,6 +58,11 @@ namespace HiveOnline
 
                 //CLEAN UP RESOURCES AND EXIT
             }
+        }
+
+        private GameStatus GetGameStatus()
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -1,13 +1,10 @@
-﻿using HiveOnline.Bugs;
+﻿using HiveContracts;
 using HiveOnline.GameAssets;
 using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Text;
 
 namespace HiveOnline
 {
-    abstract class Tile : ITile
+    public abstract class Tile : ITile
     {
         public BugType Type { get; set; }
 

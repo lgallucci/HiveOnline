@@ -1,5 +1,5 @@
 ﻿
-namespace HiveOnline
+namespace HiveContracts
 {
     // Generated code -- CC0 -- No Rights Reserved -- http://www.redblobgames.com/grids/hexagons/
 
@@ -8,7 +8,7 @@ namespace HiveOnline
     using System.Collections.Generic;
 
 
-    struct Point
+    public struct Point
     {
         public Point(double x, double y)
         {
@@ -19,7 +19,7 @@ namespace HiveOnline
         public readonly double y;
     }
 
-    struct Hex
+    public struct Hex
     {
         public Hex(int q, int r, int s)
         {
@@ -95,7 +95,7 @@ namespace HiveOnline
 
     }
 
-    struct FractionalHex
+    public struct FractionalHex
     {
         public FractionalHex(double q, double r, double s)
         {
@@ -155,7 +155,7 @@ namespace HiveOnline
 
     }
 
-    struct OffsetCoord
+    public struct OffsetCoord
     {
         public OffsetCoord(int col, int row)
         {
@@ -218,7 +218,7 @@ namespace HiveOnline
 
     }
 
-    struct DoubledCoord
+    public struct DoubledCoord
     {
         public DoubledCoord(int col, int row)
         {
@@ -263,7 +263,7 @@ namespace HiveOnline
 
     }
 
-    struct Orientation
+    public struct Orientation
     {
         public Orientation(double f0, double f1, double f2, double f3, double b0, double b1, double b2, double b3, double start_angle)
         {
@@ -288,7 +288,7 @@ namespace HiveOnline
         public readonly double start_angle;
     }
 
-    struct Layout
+    public struct Layout
     {
         public Layout(Orientation orientation, Point size, Point origin)
         {

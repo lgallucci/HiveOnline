@@ -40,8 +40,18 @@ namespace HiveGraphics
 
         private void DrawBoard(IBoard board)
         {
-            //Draw Grid
-            //Draw Pieces
+            foreach (var hex in board.Tiles)
+            {
+                var paintedCorners = board.Layout.PolygonCorners(hex.Location);
+                //Draw Grid
+            }
+
+            foreach (var tile in board.Tiles)
+            {
+                var center = tile.Location;
+                //Draw Pieces
+            }
+
             throw new NotImplementedException();
         }
 

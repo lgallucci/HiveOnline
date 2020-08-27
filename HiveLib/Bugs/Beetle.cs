@@ -1,20 +1,26 @@
-﻿using HiveOnline.GameAssets;
+﻿using HiveContracts;
+using HiveOnline.GameAssets;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace HiveOnline.Bugs
 {
-    class Beetle : Tile
+    public class Beetle : Tile
     {
         public Beetle ()
         {
             Type = BugType.Beetle;
         }
 
-        protected override bool CanBreakFree(IBoard board)
+        protected override bool BugCanMoveTo(IBoard board, Hex position)
         {
-            return true;
+            throw new NotImplementedException();
+        }
+
+        protected override void Draw()
+        {
+            throw new NotImplementedException();
         }
     }
 }

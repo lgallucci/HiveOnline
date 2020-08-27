@@ -1,5 +1,5 @@
-﻿namespace HiveOnline.Bugs
-{
+﻿namespace HiveContracts
+{ 
     public enum BugType
     {
         QueenBee = 1,
