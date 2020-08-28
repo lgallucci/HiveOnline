@@ -6,7 +6,7 @@ namespace HiveOnline
     {
         static void Main(string[] args)
         {
-            new Game().Run();
+            new HiveOnlineGame().Run();
         }
     }
 }

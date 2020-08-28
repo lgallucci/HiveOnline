@@ -16,12 +16,12 @@ namespace HiveOnline
             //CONNNECT TO SERVER
             _hiveClient = new HiveGameClient(_address, _key, _userName);
 
-            if (!_hiveClient.Connect())
-            {
-                return false;
-            }
+            //if (!_hiveClient.Connect())
+            //{
+            //    return false;
+            //}
 
-
+            
             //Handle Inputs
 
 
@@ -33,7 +33,7 @@ namespace HiveOnline
 
     struct GameInputs
     {
-        public bool MouseClicked;
-        public Point MousePosition;
+        //public bool MouseClicked;
+        //public Point MousePosition;
     }
 }

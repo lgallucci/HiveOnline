@@ -1,21 +1,25 @@
 ﻿using HiveContracts;
+using HiveLib.Bugs;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 
 namespace HiveOnline.GameAssets
 {
-    class Board : IBoard
+    public class Board : IBoard
     {
-        Tile _selectedTile;
+        //Tile _selectedTile;
 
         public List<ITile> Tiles { get; set; }
         public Layout Layout { get; set; }
+        public Dictionary<int, ITile> HexCoordinates { get; set; }
 
         public Board ()
         {
             Tiles = new List<ITile>();
-            Layout = new Layout(Layout.flat, new Point(50, 50), new Point(500, 500));
+            Layout = new Layout(Layout.flat, new Point(30, 30), new Point(500, 380));
+            HexCoordinates = new Dictionary<int, ITile>();
         }
 
         public void Move(Tile piece, Tile position)
@@ -24,7 +28,13 @@ namespace HiveOnline.GameAssets
                 throw new PlayException("Illegal Move!");
 
             piece.Location = position.Location;
+        }
 
+        public void AddHex(Hex hex)
+        {
+            var tile = new BlankTile() { Location = hex };
+            Tiles.Add(tile);
+            HexCoordinates.Add(hex.GetHashCode(), tile);
         }
 
         public bool CanMove(Tile piece)

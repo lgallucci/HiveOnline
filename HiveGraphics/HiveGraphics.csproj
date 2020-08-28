@@ -5,6 +5,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Content\ArialFont.spritefont" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Content\ArialFont.spritefont" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.0.1641" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\HiveContracts\HiveContracts.csproj" />
     <ProjectReference Include="..\HiveLib\HiveLib.csproj" />
   </ItemGroup>

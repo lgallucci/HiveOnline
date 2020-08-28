@@ -2,6 +2,7 @@
 { 
     public enum BugType
     {
+        Blank = 0,
         QueenBee = 1,
         Spider = 2,
         Beetle = 3,

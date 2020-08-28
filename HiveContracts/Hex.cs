@@ -32,29 +32,35 @@ namespace HiveContracts
         public readonly int r;
         public readonly int s;
 
+        public override int GetHashCode()
+        {
+            int hash = 17;
+            // Suitable nullity checks etc, of course :)
+            hash = hash * 23 + q.GetHashCode();
+            hash = hash * 23 + r.GetHashCode();
+            hash = hash * 23 + s.GetHashCode();
+            return hash;
+        }
+
         public Hex Add(Hex b)
         {
             return new Hex(q + b.q, r + b.r, s + b.s);
         }
-
 
         public Hex Subtract(Hex b)
         {
             return new Hex(q - b.q, r - b.r, s - b.s);
         }
 
-
         public Hex Scale(int k)
         {
             return new Hex(q * k, r * k, s * k);
         }
 
-
         public Hex RotateLeft()
         {
             return new Hex(-s, -q, -r);
         }
-
 
         public Hex RotateRight()
         {
@@ -68,7 +74,6 @@ namespace HiveContracts
             return Hex.directions[direction];
         }
 
-
         public Hex Neighbor(int direction)
         {
             return Add(Hex.Direction(direction));
@@ -81,12 +86,10 @@ namespace HiveContracts
             return Add(Hex.diagonals[direction]);
         }
 
-
         public int Length()
         {
             return (int)((Math.Abs(q) + Math.Abs(r) + Math.Abs(s)) / 2);
         }
-
 
         public int Distance(Hex b)
         {

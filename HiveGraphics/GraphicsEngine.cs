@@ -1,5 +1,9 @@
 ﻿using HiveContracts;
 using HiveOnline.GameAssets;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Content;
+using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Media;
 using System;
 
 namespace HiveGraphics
@@ -8,29 +12,34 @@ namespace HiveGraphics
     {
         public static string UserName { get; set; }
 
-        public bool Draw(int framesPerSecond, IBoard board, GameStatus gameStatus)
+        public GraphicsEngine(ContentManager content, GraphicsDevice graphics)
         {
-            DrawBoard(board);
-            DrawPiles();
-            DrawChat();
-            DrawText();
-            DrawFps(framesPerSecond);
+            Art.Load(content, graphics);
+        }
+
+        public bool Draw(GraphicsDeviceManager graphics, SpriteBatch spriteBatch, int framesPerSecond, IBoard board)
+        {
+            DrawBoard(graphics, spriteBatch, board);
+            DrawPiles(graphics, spriteBatch);
+            DrawChat(graphics, spriteBatch);
+            DrawText(graphics, spriteBatch);
+            DrawFps(graphics, spriteBatch, framesPerSecond);
             return false;
         }
 
-        private void DrawFps(int framesPerSecond)
+        private void DrawFps(GraphicsDeviceManager graphics, SpriteBatch spriteBatch, int framesPerSecond)
         {
-            throw new NotImplementedException();
+            spriteBatch.DrawString(Art.ArialFont, $"FPS: {framesPerSecond}", new Vector2(1, 1), Color.Red);
         }
 
-        private void DrawText()
+        private void DrawText(GraphicsDeviceManager graphics, SpriteBatch spriteBatch)
         {
-            throw new NotImplementedException();
+
         }
 
-        private void DrawChat()
+        private void DrawChat(GraphicsDeviceManager graphics, SpriteBatch spriteBatch)
         {
-            throw new NotImplementedException();
+
         }
 
         public static bool SetupUser()
@@ -38,28 +47,43 @@ namespace HiveGraphics
             throw new NotImplementedException();
         }
 
-        private void DrawBoard(IBoard board)
+        private void DrawBoard(GraphicsDeviceManager graphics, SpriteBatch spriteBatch, IBoard board)
         {
+            //Draw Grid
             foreach (var hex in board.Tiles)
             {
-                var paintedCorners = board.Layout.PolygonCorners(hex.Location);
-                //Draw Grid
+                HiveContracts.Point firstPoint = new HiveContracts.Point(0,0);
+                Nullable<HiveContracts.Point> previousPoint = null;
+                foreach (var corner in board.Layout.PolygonCorners(hex.Location))
+                {
+                    if (previousPoint.HasValue)
+                    {
+                        spriteBatch.DrawLine(corner.ToVector2(), previousPoint.Value.ToVector2(), Color.Red, 3f);
+                    }
+                    else
+                    {
+                        firstPoint = corner;
+                    }
+
+                    previousPoint = corner;
+                }
+                spriteBatch.DrawLine(firstPoint.ToVector2(), previousPoint.Value.ToVector2(), Color.Red, 3f);
+                var vector2 = board.Layout.HexToPixel(hex.Location);
+                spriteBatch.DrawString(Art.ArialFont, $"{hex.Location.q}, {hex.Location.r}, {hex.Location.s}", 
+                    new Vector2((float)vector2.x - 20, (float)vector2.y - 7), Color.Red);
             }
 
+            //Draw Pieces
             foreach (var tile in board.Tiles)
             {
                 var center = tile.Location;
-                //Draw Pieces
             }
-
-            throw new NotImplementedException();
         }
 
-        private void DrawPiles()
+        private void DrawPiles(GraphicsDeviceManager graphics, SpriteBatch spriteBatch)
         {
             //Draw Your Pile
             //Draw Opponents Pile
-            throw new NotImplementedException();
         }
     }
 }
