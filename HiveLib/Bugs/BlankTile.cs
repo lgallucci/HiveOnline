@@ -10,6 +10,7 @@ namespace HiveLib.Bugs
         public BlankTile()
         {
             Type = BugType.Blank;
+            Team = BugTeam.Blank;
         }
 
         protected override bool BugCanMoveTo(IBoard board, Hex position)

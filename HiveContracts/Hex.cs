@@ -8,7 +8,7 @@ namespace HiveContracts
     using System.Collections.Generic;
 
 
-    public struct Point
+    public struct Point : IEquatable<Point>
     {
         public Point(double x, double y)
         {
@@ -17,6 +17,60 @@ namespace HiveContracts
         }
         public readonly double x;
         public readonly double y;
+
+        public override bool Equals(object obj) 
+        { 
+            if (obj.GetType() == typeof(Point))
+            {
+                return this.x == ((Point)obj).x && this.y == ((Point)obj).y;
+            }
+            return false;
+        }
+        public bool Equals(Point other)
+        {
+            return this.x == other.x && this.y == other.y;
+        }
+
+        public static Point operator +(Point value1, Point value2)
+        {
+            return new Point(value1.x + value2.x, value1.y + value2.y);
+        }
+
+        public static Point operator -(Point value1, Point value2)
+        {
+            return new Point(value1.x - value2.x, value1.y - value2.y);
+        }
+
+        public static Point operator *(Point value1, Point value2)
+        {
+            return new Point(value1.x * value2.x, value1.y * value2.y);
+        }
+
+        public static Point operator /(Point source, Point divisor)
+        {
+            if (divisor.x == 0 || divisor.y == 0)
+                throw new DivideByZeroException();
+            return new Point(source.x / divisor.x, source.y / divisor.y);
+        }
+
+        public static bool operator ==(Point a, Point b)
+        { 
+            return a.x == b.x && a.y == b.y; 
+        }
+
+        public static bool operator !=(Point a, Point b)
+        {
+            return a.x != b.x || a.y != b.y;
+        }
+
+        public override int GetHashCode()
+        {
+            int hash = 17;
+            // Suitable nullity checks etc, of course :)
+            hash = hash * 23 + x.GetHashCode();
+            hash = hash * 23 + y.GetHashCode();
+            return hash;
+        }
     }
 
     public struct Hex
@@ -313,7 +367,6 @@ namespace HiveContracts
             return new Point(x + origin.x, y + origin.y);
         }
 
-
         public FractionalHex PixelToHex(Point p)
         {
             Orientation M = orientation;
@@ -323,14 +376,12 @@ namespace HiveContracts
             return new FractionalHex(q, r, -q - r);
         }
 
-
         public Point HexCornerOffset(int corner)
         {
             Orientation M = orientation;
             double angle = 2.0 * Math.PI * (M.start_angle - corner) / 6.0;
             return new Point(size.x * Math.Cos(angle), size.y * Math.Sin(angle));
         }
-
 
         public List<Point> PolygonCorners(Hex h)
         {
@@ -343,14 +394,9 @@ namespace HiveContracts
             }
             return corners;
         }
-
     }
 
-
-
     // Tests
-
-
     struct Tests
     {
 

@@ -8,9 +8,10 @@ namespace HiveOnline.Bugs
 {
     public class Beetle : Tile
     {
-        public Beetle ()
+        public Beetle(BugTeam bugTeam)
         {
             Type = BugType.Beetle;
+            Team = bugTeam;
         }
 
         protected override bool BugCanMoveTo(IBoard board, Hex position)

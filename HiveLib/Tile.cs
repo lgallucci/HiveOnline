@@ -7,9 +7,8 @@ namespace HiveOnline
     public abstract class Tile : ITile
     {
         public BugType Type { get; set; }
-
         public Hex Location { get; set; }
-
+        public BugTeam Team { get; set; }
 
         public bool CanMoveTo(IBoard board, Hex position)
         {
@@ -18,7 +17,7 @@ namespace HiveOnline
 
         public virtual bool CanMove(IBoard board)
         {
-            throw new NotImplementedException();
+            return true;            
         }
 
         protected abstract void Draw();

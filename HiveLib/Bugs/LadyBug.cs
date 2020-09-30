@@ -6,22 +6,22 @@ using System.Text;
 
 namespace HiveOnline.Bugs
 {
-    class LadyBug : Tile
+    public class LadyBug : Tile
     {
-        public LadyBug()
+        public LadyBug(BugTeam bugTeam)
         {
             Type = BugType.LadyBug;
-            throw new PlayException("LadyBug expansion hasn't been implemented!");
+            Team = bugTeam;
         }
 
         protected override bool BugCanMoveTo(IBoard board, Hex position)
         {
-            throw new NotImplementedException();
+            throw new PlayException("LadyBug expansion hasn't been implemented!");
         }
 
         protected override void Draw()
         {
-            throw new NotImplementedException();
+            throw new PlayException("LadyBug expansion hasn't been implemented!");
         }
     }
 }

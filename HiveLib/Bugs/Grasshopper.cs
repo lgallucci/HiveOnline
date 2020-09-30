@@ -6,11 +6,12 @@ using System.Text;
 
 namespace HiveOnline.Bugs
 {
-    class Grasshopper : Tile
+    public class Grasshopper : Tile
     {
-        public Grasshopper()
+        public Grasshopper(BugTeam bugTeam)
         {
             Type = BugType.Grasshopper;
+            Team = bugTeam;
         }
 
         protected override bool BugCanMoveTo(IBoard board, Hex position)

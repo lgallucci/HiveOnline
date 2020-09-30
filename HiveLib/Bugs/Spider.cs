@@ -6,11 +6,12 @@ using System.Text;
 
 namespace HiveOnline.Bugs
 {
-    class Spider : Tile
+    public class Spider : Tile
     {
-        public Spider ()
+        public Spider(BugTeam bugTeam)
         {
             Type = BugType.Spider;
+            Team = bugTeam;
         }
 
         protected override bool BugCanMoveTo(IBoard board, Hex position)

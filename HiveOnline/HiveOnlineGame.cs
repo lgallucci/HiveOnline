@@ -17,7 +17,11 @@ namespace HiveOnline
 
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
-         
+
+        int framesPerSecond = 0;
+        int frameCount = 0;
+        TimeSpan frameTimer = new TimeSpan(0);
+
         public HiveOnlineGame()
         {
             graphics = new GraphicsDeviceManager(this);
@@ -35,17 +39,22 @@ namespace HiveOnline
         {
             // TODO: Add your initialization logic here
 
+            var screenHeight = 1920;
+            var screenWidth = 1080;
+
             _graphicsEngine = new GraphicsEngine(Content, graphics.GraphicsDevice);
             _gameEngine = new GameEngine();
-            _board = new Board();
+            _board = new Board(new HiveContracts.Point(screenHeight, screenWidth));
 
             this.IsMouseVisible = true;
 
-            graphics.PreferredBackBufferWidth = 1024;
-            graphics.PreferredBackBufferHeight = 768;
+            graphics.SynchronizeWithVerticalRetrace = false;
+            graphics.PreferredBackBufferWidth = screenHeight;
+            graphics.PreferredBackBufferHeight = screenWidth;
+
             graphics.ApplyChanges();
 
-            _board.AddHex(new Hex(0, 0, 0));
+            _board.AddTile(new BlankTile { Location = new Hex(0, 0, 0) });
 
             base.Initialize();
         }
@@ -81,42 +90,32 @@ namespace HiveOnline
                 Exit();
 
             // TODO: Add your update logic here
-            var mouseState = Mouse.GetState();
-            var fractionalHex = _board.Layout.PixelToHex(new HiveContracts.Point(mouseState.X, mouseState.Y));
-            var hexHash = fractionalHex.HexRound().GetHashCode();
-            if (mouseState.LeftButton == ButtonState.Pressed && _board.HexCoordinates.ContainsKey(hexHash))
-            {
-                var tile = _board.HexCoordinates[hexHash];
-                for (int i = 0; i < 6; i++)
-                {
-                    var newHex = tile.Location.Neighbor(i);
-                    if (!_board.HexCoordinates.ContainsKey(newHex.GetHashCode()))
-                    {
-                        _board.AddHex(newHex);
-                    }
-                }
-            }
-
-            _gameEngine.Run(ref _board);
+            _gameEngine.Update(ref _board);
 
             base.Update(gameTime);
         }
 
-        int framesPerSecond = 0;
-        int frameCount = 0;
-        TimeSpan frameTimer = new TimeSpan(0);
         /// <summary>
         /// This is called when the game should draw itself.
         /// </summary>
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.CornflowerBlue);
+            GraphicsDevice.Clear(new Color(53, 101, 77));
             // TODO: Add your drawing code here
             spriteBatch.Begin();
 
             _graphicsEngine.Draw(graphics, spriteBatch, framesPerSecond, _board);
 
+            CalculateFps(gameTime);
+
+            spriteBatch.End();
+
+            base.Draw(gameTime);
+        }
+
+        private void CalculateFps(GameTime gameTime)
+        {
             frameTimer += gameTime.ElapsedGameTime;
             frameCount++;
             if (frameTimer > TimeSpan.FromSeconds(1))
@@ -125,10 +124,6 @@ namespace HiveOnline
                 frameCount = 0;
                 frameTimer = new TimeSpan(0);
             }
-
-            spriteBatch.End();
-
-            base.Draw(gameTime);
         }
     }
 }

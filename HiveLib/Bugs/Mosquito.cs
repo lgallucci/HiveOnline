@@ -6,22 +6,22 @@ using System.Text;
 
 namespace HiveOnline.Bugs
 {
-    class Mosquito : Tile
+    public class Mosquito : Tile
     {
-        public Mosquito()
+        public Mosquito(BugTeam bugTeam)
         {
             Type = BugType.Mosquito;
-            throw new PlayException("Mosquito expansion hasn't been implemented!");
+            Team = bugTeam;
         }
 
         protected override bool BugCanMoveTo(IBoard board, Hex position)
         {
-            throw new NotImplementedException();
+            throw new PlayException("Mosquito expansion hasn't been implemented!");
         }
 
         protected override void Draw()
         {
-            throw new NotImplementedException();
+            throw new PlayException("Mosquito expansion hasn't been implemented!");
         }
     }
 }

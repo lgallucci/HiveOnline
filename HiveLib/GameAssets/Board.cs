@@ -1,8 +1,10 @@
 ﻿using HiveContracts;
 using HiveLib.Bugs;
+using HiveLib.SearchAlgorithms;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace HiveOnline.GameAssets
@@ -14,11 +16,13 @@ namespace HiveOnline.GameAssets
         public List<ITile> Tiles { get; set; }
         public Layout Layout { get; set; }
         public Dictionary<int, ITile> HexCoordinates { get; set; }
+        public Point WindowSize { get; set; }
 
-        public Board ()
+        public Board (Point windowSize)
         {
+            WindowSize = windowSize;
             Tiles = new List<ITile>();
-            Layout = new Layout(Layout.flat, new Point(30, 30), new Point(500, 380));
+            Layout = new Layout(Layout.flat, new Point(45, 45), new Point(windowSize.x / 2, windowSize.y / 2));
             HexCoordinates = new Dictionary<int, ITile>();
         }
 
@@ -30,23 +34,63 @@ namespace HiveOnline.GameAssets
             piece.Location = position.Location;
         }
 
-        public void AddHex(Hex hex)
+        public void AddTile(ITile tile)
         {
-            var tile = new BlankTile() { Location = hex };
             Tiles.Add(tile);
-            HexCoordinates.Add(hex.GetHashCode(), tile);
+            HexCoordinates.Add(tile.Location.GetHashCode(), tile);
         }
 
-        public bool CanMove(Tile piece)
+        public void RemoveTile(ITile tile)
+        {
+            Tiles.Remove(tile);
+            HexCoordinates.Remove(tile.Location.GetHashCode()); 
+        }
+
+        public bool CanMove(ITile piece)
         {
             return !WillBreakHive(piece) && piece.CanMove(this);
         }
 
-        private bool WillBreakHive(Tile piece)
-        { 
-            throw new NotImplementedException(); 
-            
-            //FIRST IDEA IS TO DO A RECURSIVE SEARCH STOPPING AT EMPTY SPACES AND SEE IF WE FOUND ALL 
+        private bool WillBreakHive(ITile piece)
+        {
+            if (HexCoordinates.Count == 1)
+                return true;
+
+            var boardWithoutPiece = this.HexCoordinates.ToDictionary(d => d.Key, d => d.Value);
+
+            boardWithoutPiece.Remove(piece.Location.GetHashCode());
+
+            ITile firstNeighbor = null;
+            for(int i = 0; i < 6; i++)
+            {
+                var neighbor = piece.Location.Neighbor(i);
+                if (boardWithoutPiece.ContainsKey(neighbor.GetHashCode()))
+                {
+                    firstNeighbor = boardWithoutPiece[neighbor.GetHashCode()];
+                }
+            }
+
+            if (firstNeighbor == null)
+                return false;
+
+            return !BreadthFirstSearch.CheckSingleHive(boardWithoutPiece, firstNeighbor);
+
+
+            //SECOND IDEA IS SEEING IF THERE IS A NEIGHBOR SURROUNDED BY TWO EMPTY SPACES AND SEEING IF WE CAN RECURSIVELY GET BACK TO THAT NEIGHBOR FROM A DIFFERENT ONE
+
+            //Get non empty neighbors. add to list and create a bad list.
+
+            //Loop through non empty neighbors.
+
+            ////if neighbor is not surrounded by empties, remove from bad list.
+
+            ////If neighbor is piece surrounded by empties, do a search for other neighbors with piece removed
+
+            //////If other neighbor not found, return true.
+
+            //////If other neighbor found remove from list.
+
+            //if problem list is empty then return false;
         }
     }
 }
