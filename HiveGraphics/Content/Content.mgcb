@@ -13,13 +13,6 @@
 
 #---------------------------------- Content ---------------------------------#
 
-#begin ArialFont.spritefont
-/importer:FontDescriptionImporter
-/processor:FontDescriptionProcessor
-/processorParam:PremultiplyAlpha=True
-/processorParam:TextureFormat=Compressed
-/build:ArialFont.spritefont
-
 #begin NameFont.sprintefont
 /importer:FontDescriptionImporter
 /processor:FontDescriptionProcessor
@@ -242,4 +235,11 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:img/spider_light.png
+
+#begin ChatFont.spritefont
+/importer:FontDescriptionImporter
+/processor:FontDescriptionProcessor
+/processorParam:PremultiplyAlpha=True
+/processorParam:TextureFormat=Compressed
+/build:ChatFont.spritefont
 

@@ -7,26 +7,9 @@ using System;
 
 namespace HiveOnline
 {
-    class GameEngine
+    class RunningGameEngine : GameEngine
     {
-        private HiveGameClient _hiveClient;
-        private string _userName = string.Empty;
-        private string _address = string.Empty;
-        private string _key = string.Empty;
-
-        internal bool Run()
-        {
-            //CONNNECT TO SERVER
-            _hiveClient = new HiveGameClient(_address, _key, _userName);
-
-            //if (!_hiveClient.Connect())
-            //{
-            //    return false;
-            //}
-            return true;
-        }
-
-        internal bool Update(ref IBoard board)
+        public override bool Update(ref IBoard board)
         {
             Point originPoint = board.Layout.origin;
             Point originalSize = board.Layout.size;
@@ -61,6 +44,8 @@ namespace HiveOnline
             {
                 if (mouseState.LeftButton == ButtonState.Pressed)
                 {
+
+                    Mouse.SetCursor(MouseCursor.Crosshair);
                     draggingCamera = true;
                     if (lastDragPosition == default(Point))
                         lastDragPosition = new Point(mouseState.X, mouseState.Y);
@@ -71,6 +56,7 @@ namespace HiveOnline
                 }
                 else
                 {
+                    Mouse.SetCursor(MouseCursor.Arrow);
                     lastDragPosition = default(Point);
                     draggingCamera = false;
                 }
@@ -141,11 +127,5 @@ namespace HiveOnline
             Console.WriteLine($"MouseDragChange: {mouseDragChange.x}, {mouseDragChange.y}");
             return board.Layout.origin + mouseDragChange;
         }
-    }
-
-    struct GameInputs
-    {
-        //public bool MouseClicked;
-        //public Point MousePosition;
     }
 }

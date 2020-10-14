@@ -6,7 +6,7 @@ namespace HiveGraphics
 {
     public class Art
     {
-        public static SpriteFont ArialFont { get; private set; }
+        public static SpriteFont ChatFont { get; private set; }
         public static SpriteFont NameFont { get; private set; }
 
         //Dark Tiles
@@ -33,7 +33,7 @@ namespace HiveGraphics
 
         public static void Load(ContentManager content, GraphicsDevice graphicsDevice)
         {
-            ArialFont = content.Load<SpriteFont>("ArialFont");
+            ChatFont = content.Load<SpriteFont>("ChatFont");
             NameFont = content.Load<SpriteFont>("NameFont");
 
             DarkBeetle = content.Load<Texture2D>("img/beetle_dark");

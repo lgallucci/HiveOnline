@@ -10,6 +10,10 @@ namespace HiveContracts
         Layout Layout { get; set; }
         Dictionary<int, ITile> HexCoordinates { get; set; }
         Point WindowSize { get; set; }
+        string UserName { get; set; }
+        string OpponentName { get; set; }
+        string TypingText { get; set; }
+        Stack<string> ChatMessages { get; set; }
 
         void AddTile(ITile tile);
         void RemoveTile(ITile tile);
