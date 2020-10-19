@@ -1,10 +1,13 @@
 ﻿using HiveContracts;
+using HiveLib;
 using HiveOnline.GameAssets;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace HiveOnline.Bugs
+namespace HiveLib.Bugs
 {
     public class Grasshopper : Tile
     {
@@ -14,14 +17,22 @@ namespace HiveOnline.Bugs
             Team = bugTeam;
         }
 
-        protected override bool BugCanMoveTo(IBoard board, Hex position)
+        public override bool BugCanMoveTo(Board board, Hex position)
         {
             throw new NotImplementedException();
         }
 
-        protected override void Draw()
+        public override Texture2D GetTexture()
         {
-            throw new NotImplementedException();
+            if (Team == BugTeam.Light)
+            {
+                return Art.LightGrassHopper;
+            }
+            else if (Team == BugTeam.Dark)
+            {
+                return Art.DarkGrassHopper;
+            }
+            return Art.BlankBug;
         }
     }
 }

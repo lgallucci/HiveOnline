@@ -1,10 +1,8 @@
 ﻿using HiveContracts;
 using HiveOnline.GameAssets;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using Microsoft.Xna.Framework.Graphics;
 
-namespace HiveOnline.Bugs
+namespace HiveLib.Bugs
 {
     public class LadyBug : Tile
     {
@@ -14,14 +12,22 @@ namespace HiveOnline.Bugs
             Team = bugTeam;
         }
 
-        protected override bool BugCanMoveTo(IBoard board, Hex position)
+        public override bool BugCanMoveTo(Board board, Hex position)
         {
             throw new PlayException("LadyBug expansion hasn't been implemented!");
         }
 
-        protected override void Draw()
+        public override Texture2D GetTexture()
         {
-            throw new PlayException("LadyBug expansion hasn't been implemented!");
+            if (Team == BugTeam.Light)
+            {
+                return Art.LightLadyBug;
+            }
+            else if (Team == BugTeam.Dark)
+            {
+                return Art.DarkLadyBug;
+            }
+            return Art.BlankBug;
         }
     }
 }

@@ -194,20 +194,20 @@ namespace Unclassified.Net
 		{
 		}
 
-		#endregion Constructors
+        #endregion Constructors
 
-		#region Overridden methods
+        #region Overridden methods
 
-		/// <summary>
-		/// Instantiates a new <see cref="AsyncTcpClient"/> instance of the type
-		/// <typeparamref name="TClient"/> that runs the accepted connection.
-		/// </summary>
-		/// <param name="tcpClient">The <see cref="TcpClient"/> that represents the accepted connection.</param>
-		/// <returns>The task object representing the asynchronous operation.</returns>
-		/// <remarks>
-		/// This implementation does not call the <see cref="OnClientConnected"/> callback method.
-		/// </remarks>
-		protected override Task OnClientConnected(TcpClient tcpClient)
+        /// <summary>
+        /// Instantiates a new <see cref="AsyncTcpClient"/> instance of the type
+        /// <typeparamref name="TClient"/> that runs the accepted connection.
+        /// </summary>
+        /// <param name="tcpClient">The <see cref="TcpClient"/> that represents the accepted connection.</param>
+        /// <returns>The task object representing the asynchronous operation.</returns>
+        /// <remarks>
+        /// This implementation does not call the <see cref="OnClientConnected"/> callback method.
+        /// </remarks>
+        protected override Task OnClientConnected(TcpClient tcpClient)
 		{
 			var client = new TClient
 			{

@@ -1,9 +1,9 @@
 ﻿namespace HiveLib.SearchAlgorithms
 {
     using HiveContracts;
+    using HiveLib.GameAssets;
     using System;
     using System.Collections.Generic;
-    using System.Runtime.CompilerServices;
 
     public static class BreadthFirstSearch
     {

@@ -12,63 +12,67 @@ namespace HiveContracts
     {
         public Point(double x, double y)
         {
-            this.x = x;
-            this.y = y;
+            this.X = x;
+            this.Y = y;
         }
-        public readonly double x;
-        public readonly double y;
+        public readonly double X;
+        public readonly double Y;
 
         public override bool Equals(object obj) 
         { 
             if (obj.GetType() == typeof(Point))
             {
-                return this.x == ((Point)obj).x && this.y == ((Point)obj).y;
+                return this.X == ((Point)obj).X && this.Y == ((Point)obj).Y;
             }
             return false;
         }
         public bool Equals(Point other)
         {
-            return this.x == other.x && this.y == other.y;
+            return this.X == other.X && this.Y == other.Y;
         }
 
         public static Point operator +(Point value1, Point value2)
         {
-            return new Point(value1.x + value2.x, value1.y + value2.y);
+            return new Point(value1.X + value2.X, value1.Y + value2.Y);
         }
 
         public static Point operator -(Point value1, Point value2)
         {
-            return new Point(value1.x - value2.x, value1.y - value2.y);
+            return new Point(value1.X - value2.X, value1.Y - value2.Y);
         }
 
         public static Point operator *(Point value1, Point value2)
         {
-            return new Point(value1.x * value2.x, value1.y * value2.y);
+            return new Point(value1.X * value2.X, value1.Y * value2.Y);
+        }
+        public static Point operator *(Point value1, int value2)
+        {
+            return new Point(value1.X * value2, value1.Y * value2);
         }
 
         public static Point operator /(Point source, Point divisor)
         {
-            if (divisor.x == 0 || divisor.y == 0)
+            if (divisor.X == 0 || divisor.Y == 0)
                 throw new DivideByZeroException();
-            return new Point(source.x / divisor.x, source.y / divisor.y);
+            return new Point(source.X / divisor.X, source.Y / divisor.Y);
         }
 
         public static bool operator ==(Point a, Point b)
         { 
-            return a.x == b.x && a.y == b.y; 
+            return a.X == b.X && a.Y == b.Y; 
         }
 
         public static bool operator !=(Point a, Point b)
         {
-            return a.x != b.x || a.y != b.y;
+            return a.X != b.X || a.Y != b.Y;
         }
 
         public override int GetHashCode()
         {
             int hash = 17;
             // Suitable nullity checks etc, of course :)
-            hash = hash * 23 + x.GetHashCode();
-            hash = hash * 23 + y.GetHashCode();
+            hash = hash * 23 + X.GetHashCode();
+            hash = hash * 23 + Y.GetHashCode();
             return hash;
         }
     }
@@ -362,17 +366,17 @@ namespace HiveContracts
         public Point HexToPixel(Hex h)
         {
             Orientation M = orientation;
-            double x = (M.f0 * h.q + M.f1 * h.r) * size.x;
-            double y = (M.f2 * h.q + M.f3 * h.r) * size.y;
-            return new Point(x + origin.x, y + origin.y);
+            double x = (M.f0 * h.q + M.f1 * h.r) * size.X;
+            double y = (M.f2 * h.q + M.f3 * h.r) * size.Y;
+            return new Point(x + origin.X, y + origin.Y);
         }
 
         public FractionalHex PixelToHex(Point p)
         {
             Orientation M = orientation;
-            Point pt = new Point((p.x - origin.x) / size.x, (p.y - origin.y) / size.y);
-            double q = M.b0 * pt.x + M.b1 * pt.y;
-            double r = M.b2 * pt.x + M.b3 * pt.y;
+            Point pt = new Point((p.X - origin.X) / size.X, (p.Y - origin.Y) / size.Y);
+            double q = M.b0 * pt.X + M.b1 * pt.Y;
+            double r = M.b2 * pt.X + M.b3 * pt.Y;
             return new FractionalHex(q, r, -q - r);
         }
 
@@ -380,7 +384,7 @@ namespace HiveContracts
         {
             Orientation M = orientation;
             double angle = 2.0 * Math.PI * (M.start_angle - corner) / 6.0;
-            return new Point(size.x * Math.Cos(angle), size.y * Math.Sin(angle));
+            return new Point(size.X * Math.Cos(angle), size.Y * Math.Sin(angle));
         }
 
         public List<Point> PolygonCorners(Hex h)
@@ -390,7 +394,7 @@ namespace HiveContracts
             for (int i = 0; i < 6; i++)
             {
                 Point offset = HexCornerOffset(i);
-                corners.Add(new Point(center.x + offset.x, center.y + offset.y));
+                corners.Add(new Point(center.X + offset.X, center.Y + offset.Y));
             }
             return corners;
         }

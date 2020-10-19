@@ -2,12 +2,13 @@
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace HiveGraphics
+namespace HiveLib
 {
     public class Art
     {
         public static SpriteFont ChatFont { get; private set; }
         public static SpriteFont NameFont { get; private set; }
+        public static SpriteFont PileFont { get; private set; }
 
         //Dark Tiles
         public static Texture2D DarkBeetle { get; private set; }
@@ -29,12 +30,15 @@ namespace HiveGraphics
         public static Texture2D LightSoldierAnt { get; private set; }
         public static Texture2D LightSpider { get; private set; }
 
+        public static Texture2D BlankBug { get; private set; }
+
         public static Texture2D Pixel { get; private set; }
 
         public static void Load(ContentManager content, GraphicsDevice graphicsDevice)
         {
             ChatFont = content.Load<SpriteFont>("ChatFont");
             NameFont = content.Load<SpriteFont>("NameFont");
+            PileFont = content.Load<SpriteFont>("PileFont");
 
             DarkBeetle = content.Load<Texture2D>("img/beetle_dark");
             DarkGrassHopper = content.Load<Texture2D>("img/grasshopper_dark");
@@ -53,6 +57,8 @@ namespace HiveGraphics
             LightQueenBee = content.Load<Texture2D>("img/bee_light");
             LightSoldierAnt = content.Load<Texture2D>("img/ant_light");
             LightSpider = content.Load<Texture2D>("img/spider_light");
+
+            BlankBug = content.Load<Texture2D>("img/blank_dark");
 
             Pixel = new Texture2D(graphicsDevice, 1, 1);
             Pixel.SetData(new[] { Color.White });

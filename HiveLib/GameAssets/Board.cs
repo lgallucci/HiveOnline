@@ -1,54 +1,48 @@
 ﻿using HiveContracts;
-using HiveLib.Bugs;
+using HiveLib;
+using HiveLib.GameAssets;
 using HiveLib.SearchAlgorithms;
-using System;
-using System.Collections;
+using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace HiveOnline.GameAssets
 {
-    public class Board : IBoard
+    public class Board
     {
-        //Tile _selectedTile;
-
         public List<ITile> Tiles { get; set; }
         public Layout Layout { get; set; }
+
+        public ChatBox ChatWindow { get; set; }
         public Dictionary<int, ITile> HexCoordinates { get; set; }
-        public Point WindowSize { get; set; }
 
         public string UserName { get; set; } = "TestUser";
+        public Pile UserPile { get; set; }
+
         public string OpponentName { get; set; } = "TestOpponent";
+        public Pile OpponentPile { get; set; }
 
-
-        public string TypingText { get; set; }
-        public Stack<string> ChatMessages { get; set; }
-
-
-        public Board(Point windowSize)
+        public Board(int width, int height)
         {
-            WindowSize = windowSize;
+            ChatWindow = new ChatBox();
             Tiles = new List<ITile>();
-            Layout = new Layout(Layout.flat, new Point(45, 45), new Point(windowSize.x / 2, windowSize.y / 2));
             HexCoordinates = new Dictionary<int, ITile>();
+            UserPile = new Pile(BugTeam.Light);
+            OpponentPile = new Pile(BugTeam.Dark);
 
-            ChatMessages = new Stack<string>(new List<string>
-            {
-                "TestUser: Hey there big spender!",
-                "TestOpponent: You fucking suck.",
-                "TestUser: Cheese is smelly and gross",
-                "TestUser: Cheese is smelly and gross asdf asdf asdfas dasdfas dfasdf asdf asdf asdf asdf asdf asdf asdf asdf asdf df asdf asdf asdf asdf asdf df asdf asdf asdf asdf asdf ",
-                "TestOpponent: You're dumb.",
-                "TestUser: You're dumb.",
-                "TestOpponent: You're dumb.",
-                "TestUser: You're dumb.",
-                "TestOpponent: You're dumb.",
-                "TestUser: You're dumb.",
-                "TestOpponent: You're dumb.",
-                "TestUser: You're dumb.",
-                "TestOpponent: You're dumb."
-            });
+            SetScreenSize(width, height);
+        }
+
+        public void SetScreenSize(int width, int height)
+        {
+            ChatWindow.ChangeScreenSize(new HiveContracts.Point(width, height));
+            var size = Layout.size == default ? new HiveContracts.Point(45, 45) : Layout.size;
+            var origin = Layout.origin == default ? new HiveContracts.Point(width / 2, height / 2) : Layout.origin;
+
+            UserPile.ChangeScreenSize(width, height, false);
+            OpponentPile.ChangeScreenSize(width, height, true);
+
+            Layout = new Layout(Layout.flat, size, origin);
         }
 
         public void Move(Tile piece, Tile position)

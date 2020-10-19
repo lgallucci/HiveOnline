@@ -1,6 +1,7 @@
 ﻿using HiveClient;
 using HiveContracts;
 using HiveGraphics;
+using HiveLib;
 using HiveLib.Bugs;
 using HiveOnline.GameAssets;
 using HiveOnline.GameEngines;
@@ -27,9 +28,10 @@ namespace HiveOnline
 
 
         private GraphicsEngine _graphicsEngine;
+        private BloomFilter _bloomFilter;
         private GameEngine _gameEngine;
         private GameState _gameState;
-        private IBoard _board;
+        private Board _board;
         int _screenWidth = 1600;
         int _screenHeight = 900;
 
@@ -43,8 +45,14 @@ namespace HiveOnline
         public HiveOnlineGame()
         {
             _graphics = new GraphicsDeviceManager(this);
-
             Content.RootDirectory = "Content";
+
+            this.IsMouseVisible = true;
+            Window.AllowUserResizing = true;
+            Window.ClientSizeChanged += Window_ClientSizeChanged;
+            _graphics.SynchronizeWithVerticalRetrace = false;
+            _graphics.GraphicsProfile = GraphicsProfile.HiDef;
+
         }
 
         /// <summary>
@@ -55,21 +63,7 @@ namespace HiveOnline
         /// </summary>
         protected override void Initialize()
         {
-            // TODO: Add your initialization logic here
-
-            _graphicsEngine = new GraphicsEngine(Content, _graphics.GraphicsDevice);
-            _gameEngine = new RunningGameEngine();
-            _board = new Board(new HiveContracts.Point(_screenWidth, _screenHeight));
-            _hiveClient = new HiveGameClient(_address, _port);
-
-            this.IsMouseVisible = true;
-            Window.AllowUserResizing = true;
-            Window.ClientSizeChanged += Window_ClientSizeChanged;
-            _graphics.SynchronizeWithVerticalRetrace = false;
-            SetWindowSize();
-
-
-            _board.AddTile(new BlankTile { Location = new Hex(0, 0, 0) });
+            // TODO: Add your initialization logic here     
 
             base.Initialize();
         }
@@ -77,9 +71,12 @@ namespace HiveOnline
         private void SetWindowSize()
         {
             _graphicsEngine.ScreenSize = new HiveContracts.Point(_screenWidth, _screenHeight);
+            _bloomFilter.Load(GraphicsDevice, Content, _screenWidth, _screenHeight);
 
             _graphics.PreferredBackBufferWidth = _screenWidth;
             _graphics.PreferredBackBufferHeight = _screenHeight;
+
+            _board.SetScreenSize(_screenWidth, _screenHeight);
 
             _graphics.ApplyChanges();
         }
@@ -101,6 +98,19 @@ namespace HiveOnline
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
             // TODO: use this.Content to load your game content here
+
+            //Load our Bloomfilter!
+            _bloomFilter = new BloomFilter();
+
+            _graphicsEngine = new GraphicsEngine(Content, _graphics.GraphicsDevice);
+            _gameEngine = new RunningGameEngine();
+            _board = new Board(_screenWidth, _screenHeight);
+            _hiveClient = new HiveGameClient(_address, _port);
+            
+            SetWindowSize();
+
+            _bloomFilter.BloomPreset = BloomFilter.BloomPresets.SuperWide;
+            _board.AddTile(new BlankTile { Location = new Hex(0, 0, 0) });
         }
 
         /// <summary>
@@ -110,6 +120,7 @@ namespace HiveOnline
         protected override void UnloadContent()
         {
             // TODO: Unload any non ContentManager content here
+            _bloomFilter.Dispose();
         }
 
         /// <summary>
@@ -138,7 +149,7 @@ namespace HiveOnline
             // TODO: Add your drawing code here
             spriteBatch.Begin();
 
-            _graphicsEngine.Draw(_graphics, spriteBatch, framesPerSecond, _board);
+            _graphicsEngine.Draw(_graphics, spriteBatch, _bloomFilter, framesPerSecond, _board);
 
             CalculateFps(gameTime);
 

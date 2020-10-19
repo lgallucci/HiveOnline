@@ -1,7 +1,8 @@
 ﻿using HiveClient;
 using HiveContracts;
 using HiveLib.Bugs;
-using HiveOnline.Bugs;
+using HiveLib.GameAssets;
+using HiveOnline.GameAssets;
 using Microsoft.Xna.Framework.Input;
 using System;
 
@@ -9,7 +10,7 @@ namespace HiveOnline
 {
     class RunningGameEngine : GameEngine
     {
-        public override bool Update(ref IBoard board)
+        public override bool Update(ref Board board)
         {
             Point originPoint = board.Layout.origin;
             Point originalSize = board.Layout.size;
@@ -103,12 +104,12 @@ namespace HiveOnline
             return new BlankTile { Location = newHex };
         }
 
-        private Point HandleCameraResize(IBoard board, MouseState mouseState)
+        private Point HandleCameraResize(Board board, MouseState mouseState)
         {
             var addedSize = (mouseState.ScrollWheelValue - lastScrollWheelValue) / 20;
             lastScrollWheelValue = mouseState.ScrollWheelValue;
 
-            var newSize = addedSize + board.Layout.size.x;
+            var newSize = addedSize + board.Layout.size.X;
             if (newSize > 60)
                 newSize = 60;
             if (newSize < 30)
@@ -120,11 +121,11 @@ namespace HiveOnline
         bool draggingCamera = false;
         Point lastDragPosition = default(Point);
         int lastScrollWheelValue = default(int);
-        private Point HandleCameraDrag(IBoard board, MouseState mouseState)
+        private Point HandleCameraDrag(Board board, MouseState mouseState)
         {
-            Console.WriteLine($"MouseDrag: {lastDragPosition.x}, {lastDragPosition.y}");
+            Console.WriteLine($"MouseDrag: {lastDragPosition.X}, {lastDragPosition.Y}");
             var mouseDragChange = new Point(-1, -1) * (lastDragPosition - new Point(mouseState.X, mouseState.Y));
-            Console.WriteLine($"MouseDragChange: {mouseDragChange.x}, {mouseDragChange.y}");
+            Console.WriteLine($"MouseDragChange: {mouseDragChange.X}, {mouseDragChange.Y}");
             return board.Layout.origin + mouseDragChange;
         }
     }

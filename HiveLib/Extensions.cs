@@ -4,14 +4,14 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace HiveGraphics
+namespace HiveLib
 {
     public static class Extensions
     {
-        public static void DrawLine(this SpriteBatch spriteBatch, Vector2 start, Vector2 end, Color color, float thickness = 2f)
+        public static void DrawLine(this SpriteBatch spriteBatch, Texture2D pixel, Vector2 start, Vector2 end, Color color, float thickness = 2f)
         {
             Vector2 delta = end - start;
-            spriteBatch.Draw(Art.Pixel, start, null, color, delta.ToAngle(), new Vector2(0, 0.5f), new Vector2(delta.Length(), thickness), SpriteEffects.None, 0f);
+            spriteBatch.Draw(pixel, start, null, color, delta.ToAngle(), new Vector2(0, 0.5f), new Vector2(delta.Length(), thickness), SpriteEffects.None, 0f);
         }
 
         public static float ToAngle(this Vector2 vector)
@@ -43,7 +43,7 @@ namespace HiveGraphics
 
         public static Vector2 ToVector2(this HiveContracts.Point point)
         {
-            return new Vector2((float)point.x, (float)point.y);
+            return new Vector2((float)point.X, (float)point.Y);
         }
     }
 }

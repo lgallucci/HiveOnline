@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.Serialization;
 
-namespace HiveOnline
+namespace HiveLib
 {
     [Serializable]
     internal class PlayException : Exception

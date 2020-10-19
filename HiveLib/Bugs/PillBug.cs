@@ -1,10 +1,12 @@
 ﻿using HiveContracts;
 using HiveOnline.GameAssets;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace HiveOnline.Bugs
+namespace HiveLib.Bugs
 {
     public class PillBug : Tile
     {
@@ -14,14 +16,22 @@ namespace HiveOnline.Bugs
             Team = bugTeam;
         }
 
-        protected override bool BugCanMoveTo(IBoard board, Hex position)
+        public override bool BugCanMoveTo(Board board, Hex position)
         {
             throw new PlayException("Pillbug expansion hasn't been implemented!");
         }
 
-        protected override void Draw()
+        public override Texture2D GetTexture()
         {
-            throw new PlayException("Pillbug expansion hasn't been implemented!");
+            if (Team == BugTeam.Light)
+            {
+                return Art.LightPillBug;
+            }
+            else if (Team == BugTeam.Dark)
+            {
+                return Art.DarkPillBug;
+            }
+            return Art.BlankBug;
         }
     }
 }
