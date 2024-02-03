@@ -17,9 +17,5 @@ namespace HiveLib
         public PlayException(string message, Exception innerException) : base(message, innerException)
         {
         }
-
-        protected PlayException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
     }
 }

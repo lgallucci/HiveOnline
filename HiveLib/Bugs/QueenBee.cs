@@ -1,10 +1,7 @@
 ﻿using HiveContracts;
 using HiveOnline.GameAssets;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace HiveLib.Bugs
 {
@@ -16,22 +13,24 @@ namespace HiveLib.Bugs
             Team = bugTeam;
         }
 
-        public override bool BugCanMoveTo(Board board, Hex position)
+        public override bool CanMoveTo(PlayingBoard board, Hex position)
         {
-            throw new NotImplementedException();
+            if (HexHasNeighborNotMe(board, position))
+                return true;
+
+            return false;
         }
 
-        public override Texture2D GetTexture()
+        public override List<Hex> CalculateAvailable(PlayingBoard board)
         {
-            if (Team == BugTeam.Light)
+            var availableLocations = new List<Hex>();
+            for (int i = 0; i < 6; i++)
             {
-                return Art.LightQueenBee;
+                var neighbor = Location.Neighbor(i);
+                if (!board.ContainsTile(neighbor) && CanMoveTo(board, neighbor))
+                    availableLocations.Add(neighbor);
             }
-            else if (Team == BugTeam.Dark)
-            {
-                return Art.DarkQueenBee;
-            }
-            return Art.BlankBug;
+            return availableLocations;
         }
     }
 }

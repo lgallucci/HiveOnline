@@ -7,10 +7,9 @@ namespace HiveContracts
     using System.Linq;
     using System.Collections.Generic;
 
-
-    public struct Point : IEquatable<Point>
+    public struct HexPoint : IEquatable<HexPoint>
     {
-        public Point(double x, double y)
+        public HexPoint(double x, double y)
         {
             this.X = x;
             this.Y = y;
@@ -20,49 +19,49 @@ namespace HiveContracts
 
         public override bool Equals(object obj) 
         { 
-            if (obj.GetType() == typeof(Point))
+            if (obj.GetType() == typeof(HexPoint))
             {
-                return this.X == ((Point)obj).X && this.Y == ((Point)obj).Y;
+                return this.X == ((HexPoint)obj).X && this.Y == ((HexPoint)obj).Y;
             }
             return false;
         }
-        public bool Equals(Point other)
+        public bool Equals(HexPoint other)
         {
             return this.X == other.X && this.Y == other.Y;
         }
 
-        public static Point operator +(Point value1, Point value2)
+        public static HexPoint operator +(HexPoint value1, HexPoint value2)
         {
-            return new Point(value1.X + value2.X, value1.Y + value2.Y);
+            return new HexPoint(value1.X + value2.X, value1.Y + value2.Y);
         }
 
-        public static Point operator -(Point value1, Point value2)
+        public static HexPoint operator -(HexPoint value1, HexPoint value2)
         {
-            return new Point(value1.X - value2.X, value1.Y - value2.Y);
+            return new HexPoint(value1.X - value2.X, value1.Y - value2.Y);
         }
 
-        public static Point operator *(Point value1, Point value2)
+        public static HexPoint operator *(HexPoint value1, HexPoint value2)
         {
-            return new Point(value1.X * value2.X, value1.Y * value2.Y);
+            return new HexPoint(value1.X * value2.X, value1.Y * value2.Y);
         }
-        public static Point operator *(Point value1, int value2)
+        public static HexPoint operator *(HexPoint value1, int value2)
         {
-            return new Point(value1.X * value2, value1.Y * value2);
+            return new HexPoint(value1.X * value2, value1.Y * value2);
         }
 
-        public static Point operator /(Point source, Point divisor)
+        public static HexPoint operator /(HexPoint source, HexPoint divisor)
         {
             if (divisor.X == 0 || divisor.Y == 0)
                 throw new DivideByZeroException();
-            return new Point(source.X / divisor.X, source.Y / divisor.Y);
+            return new HexPoint(source.X / divisor.X, source.Y / divisor.Y);
         }
 
-        public static bool operator ==(Point a, Point b)
+        public static bool operator ==(HexPoint a, HexPoint b)
         { 
             return a.X == b.X && a.Y == b.Y; 
         }
 
-        public static bool operator !=(Point a, Point b)
+        public static bool operator !=(HexPoint a, HexPoint b)
         {
             return a.X != b.X || a.Y != b.Y;
         }
@@ -77,7 +76,7 @@ namespace HiveContracts
         }
     }
 
-    public struct Hex
+    public struct Hex : IEquatable<Hex>
     {
         public Hex(int q, int r, int s)
         {
@@ -154,6 +153,23 @@ namespace HiveContracts
             return Subtract(b).Length();
         }
 
+        public bool Equals(Hex other)
+        {
+            return this.GetHashCode() == other.GetHashCode();
+        }
+
+        public static bool operator ==(Hex h1, Hex h2)
+        {
+            // Equals handles case of null on right side.
+            return h1.Equals(h2);
+        }
+
+        public static bool operator !=(Hex h1, Hex h2) => !(h1 == h2);
+
+        public override bool Equals(object obj)
+        {
+            return obj is Hex && Equals((Hex)obj);
+        }
     }
 
     public struct FractionalHex
@@ -351,50 +367,50 @@ namespace HiveContracts
 
     public struct Layout
     {
-        public Layout(Orientation orientation, Point size, Point origin)
+        public Layout(Orientation orientation, HexPoint size, HexPoint origin)
         {
             this.orientation = orientation;
             this.size = size;
             this.origin = origin;
         }
         public readonly Orientation orientation;
-        public readonly Point size;
-        public readonly Point origin;
+        public readonly HexPoint size;
+        public readonly HexPoint origin;
         static public Orientation pointy = new Orientation(Math.Sqrt(3.0), Math.Sqrt(3.0) / 2.0, 0.0, 3.0 / 2.0, Math.Sqrt(3.0) / 3.0, -1.0 / 3.0, 0.0, 2.0 / 3.0, 0.5);
         static public Orientation flat = new Orientation(3.0 / 2.0, 0.0, Math.Sqrt(3.0) / 2.0, Math.Sqrt(3.0), 2.0 / 3.0, 0.0, -1.0 / 3.0, Math.Sqrt(3.0) / 3.0, 0.0);
 
-        public Point HexToPixel(Hex h)
+        public HexPoint HexToPixel(Hex h)
         {
             Orientation M = orientation;
             double x = (M.f0 * h.q + M.f1 * h.r) * size.X;
             double y = (M.f2 * h.q + M.f3 * h.r) * size.Y;
-            return new Point(x + origin.X, y + origin.Y);
+            return new HexPoint(x + origin.X, y + origin.Y);
         }
 
-        public FractionalHex PixelToHex(Point p)
+        public FractionalHex PixelToHex(HexPoint p)
         {
             Orientation M = orientation;
-            Point pt = new Point((p.X - origin.X) / size.X, (p.Y - origin.Y) / size.Y);
+            HexPoint pt = new HexPoint((p.X - origin.X) / size.X, (p.Y - origin.Y) / size.Y);
             double q = M.b0 * pt.X + M.b1 * pt.Y;
             double r = M.b2 * pt.X + M.b3 * pt.Y;
             return new FractionalHex(q, r, -q - r);
         }
 
-        public Point HexCornerOffset(int corner)
+        public HexPoint HexCornerOffset(int corner)
         {
             Orientation M = orientation;
             double angle = 2.0 * Math.PI * (M.start_angle - corner) / 6.0;
-            return new Point(size.X * Math.Cos(angle), size.Y * Math.Sin(angle));
+            return new HexPoint(size.X * Math.Cos(angle), size.Y * Math.Sin(angle));
         }
 
-        public List<Point> PolygonCorners(Hex h)
+        public List<HexPoint> PolygonCorners(Hex h)
         {
-            List<Point> corners = new List<Point> { };
-            Point center = HexToPixel(h);
+            List<HexPoint> corners = new List<HexPoint> { };
+            HexPoint center = HexToPixel(h);
             for (int i = 0; i < 6; i++)
             {
-                Point offset = HexCornerOffset(i);
-                corners.Add(new Point(center.X + offset.X, center.Y + offset.Y));
+                HexPoint offset = HexCornerOffset(i);
+                corners.Add(new HexPoint(center.X + offset.X, center.Y + offset.Y));
             }
             return corners;
         }
@@ -515,9 +531,9 @@ namespace HiveContracts
         static public void TestLayout()
         {
             Hex h = new Hex(3, 4, -7);
-            Layout flat = new Layout(Layout.flat, new Point(10.0, 15.0), new Point(35.0, 71.0));
+            Layout flat = new Layout(Layout.flat, new HexPoint(10.0, 15.0), new HexPoint(35.0, 71.0));
             Tests.EqualHex("layout", h, flat.PixelToHex(flat.HexToPixel(h)).HexRound());
-            Layout pointy = new Layout(Layout.pointy, new Point(10.0, 15.0), new Point(35.0, 71.0));
+            Layout pointy = new Layout(Layout.pointy, new HexPoint(10.0, 15.0), new HexPoint(35.0, 71.0));
             Tests.EqualHex("layout", h, pointy.PixelToHex(pointy.HexToPixel(h)).HexRound());
         }
 

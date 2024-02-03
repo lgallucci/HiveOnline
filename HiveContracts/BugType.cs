@@ -10,6 +10,8 @@
         SoldierAnt = 5,
         Mosquito = 6,
         LadyBug = 7,
-        PillBug = 8
+        PillBug = 8,
+        Selection = 9,
+        Available = 10
     }
 }

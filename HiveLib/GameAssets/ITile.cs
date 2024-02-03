@@ -1,18 +1,22 @@
 ﻿using HiveContracts;
 using HiveOnline.GameAssets;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+using System.Collections.Generic;
 
 namespace HiveLib.GameAssets
 {
-    public interface ITile
+    public interface ITile : IEquitable<Hex>
     {
         BugType Type { get; set; }
         BugTeam Team { get; set; }
         Hex Location { get; set; }
 
-        bool CanMove(Board board);
-        void Draw(GraphicsDeviceManager graphics, SpriteBatch spriteBatch, BloomFilter bloomFilter, Board board);
-        void Draw(GraphicsDeviceManager graphics, SpriteBatch spriteBatch, BloomFilter bloomFilter, Vector2 location, HiveContracts.Point tileSize);
+        List<Hex> CalculateAvailable(PlayingBoard board);
+        bool CanMove(PlayingBoard board);
+        bool CanMoveTo(PlayingBoard board, Hex position);
+        void Draw(PlayingBoard board);
+        void Draw(HexPoint location, HexPoint tileSize);
+        void RunAddRules(ITile tile);
+        ITile RunRemoveRules();
+        bool Equals(Hex other);
     }
 }

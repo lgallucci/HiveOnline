@@ -1,10 +1,8 @@
-﻿using Microsoft.Xna.Framework;
-
-namespace HiveLib.GameAssets
+﻿namespace HiveLib.GameAssets
 {
     public class ChatMessage
     {
-        public Color PlayerColor { get; set; }
+        public int PlayerTeam { get; set; }
         public string PlayerName { get; set; }
         public string Message { get; set; }
     }

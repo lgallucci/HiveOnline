@@ -180,8 +180,8 @@ technique Extract
 {
     pass Pass1
     {
-        VertexShader = compile vs_4_0 VertexShaderFunction();
-        PixelShader = compile ps_4_0 ExtractPS();
+        VertexShader = compile vs_3_0 VertexShaderFunction();
+        PixelShader = compile ps_3_0 ExtractPS();
     }
 }
 
@@ -189,8 +189,8 @@ technique ExtractLuminance
 {
     pass Pass1
     {
-        VertexShader = compile vs_4_0 VertexShaderFunction();
-        PixelShader = compile ps_4_0 ExtractLuminancePS();
+        VertexShader = compile vs_3_0 VertexShaderFunction();
+        PixelShader = compile ps_3_0 ExtractLuminancePS();
     }
 }
 
@@ -198,8 +198,8 @@ technique Downsample
 {
     pass Pass1
     {
-        VertexShader = compile vs_4_0 VertexShaderFunction();
-        PixelShader = compile ps_4_0 DownsamplePS();
+        VertexShader = compile vs_3_0 VertexShaderFunction();
+        PixelShader = compile ps_3_0 DownsamplePS();
     }
 }
 
@@ -207,8 +207,8 @@ technique Upsample
 {
     pass Pass1
     {
-        VertexShader = compile vs_4_0 VertexShaderFunction();
-        PixelShader = compile ps_4_0 UpsamplePS();
+        VertexShader = compile vs_3_0 VertexShaderFunction();
+        PixelShader = compile ps_3_0 UpsamplePS();
     }
 }
 
@@ -217,7 +217,7 @@ technique UpsampleLuminance
 {
     pass Pass1
     {
-        VertexShader = compile vs_4_0 VertexShaderFunction();
-        PixelShader = compile ps_4_0 UpsampleLuminancePS();
+        VertexShader = compile vs_3_0 VertexShaderFunction();
+        PixelShader = compile ps_3_0 UpsampleLuminancePS();
     }
 }

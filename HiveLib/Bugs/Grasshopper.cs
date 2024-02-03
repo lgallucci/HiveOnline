@@ -1,11 +1,9 @@
 ﻿using HiveContracts;
-using HiveLib;
+using HiveLib.GameAssets;
 using HiveOnline.GameAssets;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
 
 namespace HiveLib.Bugs
 {
@@ -17,22 +15,30 @@ namespace HiveLib.Bugs
             Team = bugTeam;
         }
 
-        public override bool BugCanMoveTo(Board board, Hex position)
+        public override List<Hex> CalculateAvailable(PlayingBoard board)
         {
-            throw new NotImplementedException();
+            var availableLocations = new List<Hex>();
+            for (int i = 0; i < 6; i++)
+            {
+                if (board.ContainsTile(Location.Neighbor(i)))
+                    availableLocations.Add(HopUntilBlank(board, Location, i));
+            }
+            return availableLocations;
         }
 
-        public override Texture2D GetTexture()
+        private Hex HopUntilBlank(PlayingBoard board, Hex location, int direction)
         {
-            if (Team == BugTeam.Light)
-            {
-                return Art.LightGrassHopper;
-            }
-            else if (Team == BugTeam.Dark)
-            {
-                return Art.DarkGrassHopper;
-            }
-            return Art.BlankBug;
+            Hex newLocation;
+            if (board.ContainsTile(location))
+                newLocation = HopUntilBlank(board, location.Neighbor(direction), direction);
+            else
+                newLocation = location;
+            return newLocation;
+        }
+
+        public override bool HasFreedomToMove(PlayingBoard board)
+        {
+            return true;
         }
     }
 }

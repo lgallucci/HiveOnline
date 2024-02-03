@@ -1,68 +1,79 @@
 ﻿using HiveContracts;
 using HiveLib;
-using HiveLib.GameAssets;
-using HiveOnline.GameAssets;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
-using Microsoft.Xna.Framework.Media;
 using System;
-using System.Linq;
-using System.Text;
+using System.Reflection.Metadata;
 
 namespace HiveGraphics
 {
     public class GraphicsEngine
     {
-        public HiveContracts.Point ScreenSize { get; set; }
+        public Point ScreenSize { get; set; }
+        public GraphicsDeviceManager GraphicsDeviceManager { get; set; }
+        public static GraphicsDevice Device { get; set; }
+        public static SpriteBatch SpriteBatch { get; set; }
+        public static BloomFilter BloomFilter { get; set; }
 
-        public GraphicsEngine(ContentManager content, GraphicsDevice graphics)
+        public GraphicsEngine(Game game)
         {
-            Art.Load(content, graphics);
+            GraphicsDeviceManager = new GraphicsDeviceManager(game);
+
+            GraphicsDeviceManager.SynchronizeWithVerticalRetrace = false;
+            GraphicsDeviceManager.GraphicsProfile = GraphicsProfile.HiDef;
+
+            BloomFilter = new BloomFilter();
+        }
+        public void Load(GraphicsDevice device, ContentManager content)
+        {
+            Device = device;
+            // Create a new SpriteBatch, which can be used to draw textures.
+            SpriteBatch = new SpriteBatch(device);
+
+            BloomFilter.Load(device, content, ScreenSize.X, ScreenSize.Y);
+            BloomFilter.BloomPreset = BloomFilter.BloomPresets.Small;
+
+            Art.Load(content, device);
         }
 
-        public bool Draw(GraphicsDeviceManager graphics, SpriteBatch spriteBatch, BloomFilter bloomFilter, int framesPerSecond, Board board)
+        public void DrawFps(int framesPerSecond)
         {
-            DrawBoard(graphics, spriteBatch, board, bloomFilter);
-            DrawPiles(graphics, spriteBatch, board, bloomFilter);
-            board.ChatWindow.Draw(graphics, spriteBatch);
-            DrawText(graphics, spriteBatch, board);
-            DrawFps(graphics, spriteBatch, framesPerSecond);
-            return false;
+            SpriteBatch.DrawString(Art.ChatFont, $"FPS: {framesPerSecond}", new Vector2(1, 1), Color.Red);
         }
 
-        private void DrawFps(GraphicsDeviceManager graphics, SpriteBatch spriteBatch, int framesPerSecond)
+        public void SetScreenSize(int screenWidth, int screenHeight)
         {
-            spriteBatch.DrawString(Art.ChatFont, $"FPS: {framesPerSecond}", new Vector2(1, 1), Color.Red);
+            ScreenSize = new Point(screenWidth, screenHeight);
+
+            GraphicsDeviceManager.PreferredBackBufferWidth = screenWidth;
+            GraphicsDeviceManager.PreferredBackBufferHeight = screenHeight;
+
+            GraphicsDeviceManager.ApplyChanges();
         }
 
-        private void DrawText(GraphicsDeviceManager graphics, SpriteBatch spriteBatch, Board board)
+        public void BeingSprites()
         {
-            var userNameSize = Art.NameFont.MeasureString(board.UserName);
-            var opponentNameSize = Art.NameFont.MeasureString(board.OpponentName ?? "TestOpponent");
-            spriteBatch.DrawString(Art.NameFont, board.UserName ?? "TestUser", new Vector2(5, /*window height - font height*/(float)ScreenSize.Y - userNameSize.Y - 75), Color.CornflowerBlue);
-            spriteBatch.DrawString(Art.NameFont, board.OpponentName ?? "TestOpponent", new Vector2(/*window width - font width*/(float)ScreenSize.X - opponentNameSize.X - 5, 75), Color.Red);
+            SpriteBatch.Begin();
         }
 
-        public static bool SetupUser()
+        public void EndSprites()
         {
-            throw new NotImplementedException();
+            SpriteBatch.End();
         }
 
-        private void DrawBoard(GraphicsDeviceManager graphics, SpriteBatch spriteBatch, Board board, BloomFilter bloomFilter)
+        public void DrawString(string text)
         {
-            //Draw Grid
-            foreach (var tile in board.Tiles)
-            {
-                tile.Draw(graphics, spriteBatch, bloomFilter, board);
-            }
+            var fontSize = Art.NameFont.MeasureString(text);
+            SpriteBatch.DrawString(Art.NameFont, text, new Vector2((ScreenSize.X / 2) - fontSize.X / 2, (ScreenSize.Y / 2) - fontSize.Y / 2), Color.DeepPink);
         }
 
-        private void DrawPiles(GraphicsDeviceManager graphics, SpriteBatch spriteBatch, Board board, BloomFilter bloomFilter)
+        public void Unload()
         {
-            board.UserPile.Draw(graphics, spriteBatch, bloomFilter);
-            board.OpponentPile.Draw(graphics, spriteBatch, bloomFilter);
+            BloomFilter.Dispose();
+        }
+
+        internal static void SetRenderTarget(RenderTarget2D value)
+        {
+            Device.SetRenderTarget(value);
         }
     }
 }

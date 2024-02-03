@@ -1,10 +1,7 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+﻿using HiveContracts;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace HiveLib
+namespace HiveGraphics
 {
     public static class Extensions
     {
@@ -41,7 +38,7 @@ namespace HiveLib
             return new Vector2(length * (float)Math.Cos(theta), length * (float)Math.Sin(theta));
         }
 
-        public static Vector2 ToVector2(this HiveContracts.Point point)
+        public static Vector2 ToVector2(this HexPoint point)
         {
             return new Vector2((float)point.X, (float)point.Y);
         }

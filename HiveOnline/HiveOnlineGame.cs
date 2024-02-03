@@ -12,7 +12,6 @@ using System;
 
 namespace HiveOnline
 {
-
     public enum GameState
     {
         OpeningScreen = 0,
@@ -26,17 +25,11 @@ namespace HiveOnline
         private string _address = string.Empty;
         private int _port = 60000;
 
-
         private GraphicsEngine _graphicsEngine;
-        private BloomFilter _bloomFilter;
         private GameEngine _gameEngine;
         private GameState _gameState;
-        private Board _board;
         int _screenWidth = 1600;
         int _screenHeight = 900;
-
-        GraphicsDeviceManager _graphics;
-        SpriteBatch spriteBatch;
 
         int framesPerSecond = 0;
         int frameCount = 0;
@@ -44,15 +37,13 @@ namespace HiveOnline
 
         public HiveOnlineGame()
         {
-            _graphics = new GraphicsDeviceManager(this);
+            _graphicsEngine = new GraphicsEngine(this);
+
             Content.RootDirectory = "Content";
 
             this.IsMouseVisible = true;
             Window.AllowUserResizing = true;
             Window.ClientSizeChanged += Window_ClientSizeChanged;
-            _graphics.SynchronizeWithVerticalRetrace = false;
-            _graphics.GraphicsProfile = GraphicsProfile.HiDef;
-
         }
 
         /// <summary>
@@ -70,15 +61,9 @@ namespace HiveOnline
 
         private void SetWindowSize()
         {
-            _graphicsEngine.ScreenSize = new HiveContracts.Point(_screenWidth, _screenHeight);
-            _bloomFilter.Load(GraphicsDevice, Content, _screenWidth, _screenHeight);
+            _gameEngine.SetScreenSize(_screenWidth, _screenHeight);
 
-            _graphics.PreferredBackBufferWidth = _screenWidth;
-            _graphics.PreferredBackBufferHeight = _screenHeight;
-
-            _board.SetScreenSize(_screenWidth, _screenHeight);
-
-            _graphics.ApplyChanges();
+            _graphicsEngine.SetScreenSize(_screenWidth, _screenHeight);
         }
 
         private void Window_ClientSizeChanged(object sender, EventArgs e)
@@ -95,22 +80,11 @@ namespace HiveOnline
         /// </summary>
         protected override void LoadContent()
         {
-            // Create a new SpriteBatch, which can be used to draw textures.
-            spriteBatch = new SpriteBatch(GraphicsDevice);
             // TODO: use this.Content to load your game content here
-
-            //Load our Bloomfilter!
-            _bloomFilter = new BloomFilter();
-
-            _graphicsEngine = new GraphicsEngine(Content, _graphics.GraphicsDevice);
-            _gameEngine = new RunningGameEngine();
-            _board = new Board(_screenWidth, _screenHeight);
+            _gameEngine = new OpeningScreenEngine();
             _hiveClient = new HiveGameClient(_address, _port);
-            
             SetWindowSize();
-
-            _bloomFilter.BloomPreset = BloomFilter.BloomPresets.SuperWide;
-            _board.AddTile(new BlankTile { Location = new Hex(0, 0, 0) });
+            _graphicsEngine.Load(GraphicsDevice, Content);
         }
 
         /// <summary>
@@ -120,7 +94,7 @@ namespace HiveOnline
         protected override void UnloadContent()
         {
             // TODO: Unload any non ContentManager content here
-            _bloomFilter.Dispose();
+            _graphicsEngine.Unload();
         }
 
         /// <summary>
@@ -130,11 +104,21 @@ namespace HiveOnline
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Update(GameTime gameTime)
         {
-            if (Keyboard.GetState().IsKeyDown(Keys.Escape))
-                Exit();
+            //if (Keyboard.GetState().IsKeyDown(Keys.Escape))
+            //    Exit();
 
             // TODO: Add your update logic here
-            _gameEngine.Update(ref _board);
+
+            GameState _previousState = _gameState;
+
+            _gameEngine.Update(ref _gameState);
+
+            if (_gameState == GameState.Playing && _previousState != GameState.Playing)
+                _gameEngine = new RunningGameEngine(_screenWidth, _screenHeight, BugTeam.Light);
+            if (_gameState == GameState.OpeningScreen && _previousState != GameState.OpeningScreen)
+                _gameEngine = new OpeningScreenEngine();
+            if (_gameState == GameState.ConnectToServer && _previousState != GameState.ConnectToServer)
+                _gameEngine = new ConnectToServerEngine();
 
             base.Update(gameTime);
         }
@@ -146,14 +130,17 @@ namespace HiveOnline
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(new Color(53, 101, 77));
-            // TODO: Add your drawing code here
-            spriteBatch.Begin();
 
-            _graphicsEngine.Draw(_graphics, spriteBatch, _bloomFilter, framesPerSecond, _board);
+            // TODO: Add your drawing code here
+            _graphicsEngine.BeingSprites();
+
+            _gameEngine.Draw(_graphicsEngine);
+
+            _graphicsEngine.DrawFps(framesPerSecond);
 
             CalculateFps(gameTime);
 
-            spriteBatch.End();
+            _graphicsEngine.EndSprites();
 
             base.Draw(gameTime);
         }

@@ -1,6 +1,6 @@
 ﻿using HiveContracts;
 using HiveOnline.GameAssets;
-using Microsoft.Xna.Framework.Graphics;
+using System.Collections.Generic;
 
 namespace HiveLib.Bugs
 {
@@ -12,22 +12,14 @@ namespace HiveLib.Bugs
             Team = bugTeam;
         }
 
-        public override bool BugCanMoveTo(Board board, Hex position)
+        public override bool CanMoveTo(PlayingBoard board, Hex position)
         {
             throw new PlayException("LadyBug expansion hasn't been implemented!");
         }
 
-        public override Texture2D GetTexture()
+        public override List<Hex> CalculateAvailable(PlayingBoard board)
         {
-            if (Team == BugTeam.Light)
-            {
-                return Art.LightLadyBug;
-            }
-            else if (Team == BugTeam.Dark)
-            {
-                return Art.DarkLadyBug;
-            }
-            return Art.BlankBug;
+            throw new System.NotImplementedException();
         }
     }
 }

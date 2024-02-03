@@ -1,10 +1,6 @@
 ﻿using HiveContracts;
 using HiveOnline.GameAssets;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace HiveLib.Bugs
 {
@@ -16,22 +12,14 @@ namespace HiveLib.Bugs
             Team = bugTeam;
         }
 
-        public override bool BugCanMoveTo(Board board, Hex position)
+        public override bool CanMoveTo(PlayingBoard board, Hex position)
         {
             throw new PlayException("Mosquito expansion hasn't been implemented!");
         }
 
-        public override Texture2D GetTexture()
+        public override List<Hex> CalculateAvailable(PlayingBoard board)
         {
-            if (Team == BugTeam.Light)
-            {
-                return Art.LightMosquito;
-            }
-            else if (Team == BugTeam.Dark)
-            {
-                return Art.DarkMosquito;
-            }
-            return Art.BlankBug;
+            throw new System.NotImplementedException();
         }
     }
 }
