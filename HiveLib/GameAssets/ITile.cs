@@ -9,6 +9,7 @@ namespace HiveLib.GameAssets
         BugType Type { get; set; }
         BugTeam Team { get; set; }
         Hex Location { get; set; }
+        bool IsInspecting { get; set; }
 
         List<Hex> CalculateAvailable(PlayingBoard board);
         bool CanMove(PlayingBoard board);

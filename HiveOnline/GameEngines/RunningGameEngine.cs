@@ -40,13 +40,15 @@ namespace HiveOnline
             else
                 _playingState = PlayingState.OpponentsTurn;
 
-            if (_testing)
-                foreach (var testTile in TestBoard.GetTestBoard())
-                {
-                    _board.AddTile(testTile);
-                }
-            else
-                _board.AddTile(new QueenBee(BugTeam.Light) { Location = new Hex(0, 0, 0) });
+            //if (_testing)
+            //    //foreach (var testTile in TestBoard.GetTestBoard())
+            //    foreach (var testTile in TestBoard.GetSpiderAntTestBoard())
+            //    {
+            //        _board.AddTile(testTile);
+            //    }
+            //else
+            //    _board.AddTile(new QueenBee(BugTeam.Light) { Location = new Hex(0, 0, 0) });
+            _board.AddAvailableHexes(new List<Hex> { new Hex(0, 0, 0) });
         }
 
         public override void SetScreenSize(int screenWidth, int screenHeight)
@@ -77,11 +79,20 @@ namespace HiveOnline
             var clickedHex = fractionalHex.HexRound();
 
             //Enter Layout
-            if (false)
+            if (_board.UserPile.Intersects(mouseState.X, mouseState.Y))
             {
                 if (MouseLeftClickedOnce(mouseState.LeftButton))
                 {
+                    _board.SelectedTile = null;
+                    _board.ClearAvailableTiles();
 
+                    var bug = _board.UserPile.GetIntersectBug(mouseState.X, mouseState.Y);
+
+                    if (bug != null)
+                    {
+                        _board.SelectedTile = bug;
+                        _board.AddAvailableHexes(_board.UserPile.CalculateAvailable(_board));
+                    }
                 }
             }
             //Enter Chat Box
@@ -102,6 +113,7 @@ namespace HiveOnline
 
                     if (selectedTile != null)
                     {
+                        //TODO: Figure out a better way to handle pile selections
                         if (_board.ContainsTile(selectedTile))
                             _board.RemoveTile(_board.Tiles[selectedTile.GetHashCode()]);
                         else
@@ -129,7 +141,6 @@ namespace HiveOnline
                                 rightMost = hex.Location;
                         }
                     }
-
                 }
             }
             //Enter Hex on Board
@@ -154,6 +165,11 @@ namespace HiveOnline
                         _board.SelectedTile = null;
                         _board.ClearAvailableTiles();
                     }
+                }
+                else if (MouseRightClickedOnce(mouseState.RightButton))
+                {
+                    var tile = _board.Tiles[clickedHex.GetHashCode()];
+                    tile.IsInspecting = !tile.IsInspecting;
                 }
             }
             else//Drag
@@ -196,6 +212,13 @@ namespace HiveOnline
         {
             var clicked = _leftButtonPreviousState == ButtonState.Released && leftButton == ButtonState.Pressed;
             _leftButtonPreviousState = leftButton;
+            return clicked;
+        }
+        private ButtonState _rightButtonPreviousState;
+        private bool MouseRightClickedOnce(ButtonState rightButton)
+        {
+            var clicked = _rightButtonPreviousState == ButtonState.Released && rightButton == ButtonState.Pressed;
+            _rightButtonPreviousState = rightButton;
             return clicked;
         }
 
@@ -252,6 +275,8 @@ namespace HiveOnline
             return board.Layout.origin + mouseDragChange;
         }
 
+
+        //TODO: Check can't place new tile, can't move any tiles
     }
 
     class TestBoard
@@ -275,7 +300,30 @@ namespace HiveOnline
                 //new QueenBee(BugTeam.Light) { Location = new Hex(0, 0, 0), Type = BugType.SoldierAnt },
                 //new QueenBee(BugTeam.Dark) { Location = new Hex(0, 0, 0), Type = BugType.SoldierAnt },
             };
+            return board;
+        }
 
+        public static List<ITile> GetSpiderAntTestBoard()
+        {
+            var board = new List<ITile>
+            {
+                new QueenBee(BugTeam.Light) { Location = new Hex(0, -1, 1) },
+                new QueenBee(BugTeam.Dark) { Location = new Hex(-1, 0, 1) },
+                new Beetle(BugTeam.Light) { Location = new Hex(-2, 1, 1) },
+                new Beetle(BugTeam.Dark) { Location = new Hex(-2, 2, 0) },
+                new Beetle(BugTeam.Light) { Location = new Hex(-1, 2, -1) },
+                new Beetle(BugTeam.Dark) { Location = new Hex(0, 2, -2) },
+                new Grasshopper(BugTeam.Light) { Location = new Hex(1, 1, -2) },
+                new Grasshopper(BugTeam.Dark) { Location = new Hex(2, 0, -2) },
+                new Spider(BugTeam.Light) { Location = new Hex(2, -1, -1) },
+                new Spider(BugTeam.Dark) { Location = new Hex(2, -2, 0) },
+                //new Spider(BugTeam.Light) { Location = new Hex(3, -3, 0) },
+                //new Spider(BugTeam.Dark) { Location = new Hex(1, -3, 2) },
+                new SoldierAnt(BugTeam.Light) { Location = new Hex(0, 0, 0) },
+                new SoldierAnt(BugTeam.Dark) { Location = new Hex(0, 0, 0) },
+                new SoldierAnt(BugTeam.Light) { Location = new Hex(0, 0, 0) },
+                new SoldierAnt(BugTeam.Dark) { Location = new Hex(0, 0, 0) },
+            };
             return board;
         }
     }

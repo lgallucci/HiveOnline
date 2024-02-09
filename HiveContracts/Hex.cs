@@ -30,6 +30,16 @@ namespace HiveContracts
             return this.X == other.X && this.Y == other.Y;
         }
 
+        public bool Contains(int x, int y, int width, int height)
+        {
+            if (X <= x && x < X + width && Y <= y)
+            {
+                return y < Y + height;
+            }
+
+            return false;
+        }
+
         public static HexPoint operator +(HexPoint value1, HexPoint value2)
         {
             return new HexPoint(value1.X + value2.X, value1.Y + value2.Y);

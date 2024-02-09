@@ -13,21 +13,14 @@ namespace HiveLib.Bugs
             Team = bugTeam;
         }
 
-        public override bool CanMoveTo(PlayingBoard board, Hex position)
-        {
-            if (HexHasNeighborNotMe(board, position))
-                return true;
-
-            return false;
-        }
-
         public override List<Hex> CalculateAvailable(PlayingBoard board)
         {
             var availableLocations = new List<Hex>();
+            var woBoard = GetBoardWithoutMe(board);
             for (int i = 0; i < 6; i++)
             {
                 var neighbor = Location.Neighbor(i);
-                if (!board.ContainsTile(neighbor) && CanMoveTo(board, neighbor))
+                if (!board.ContainsTile(neighbor) && HexHasNeighborNotMe(woBoard, neighbor) && HasOpenNeighbor(woBoard, Location, i))
                     availableLocations.Add(neighbor);
             }
             return availableLocations;

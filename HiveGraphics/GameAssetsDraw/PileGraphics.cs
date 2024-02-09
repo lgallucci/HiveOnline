@@ -29,18 +29,17 @@ public class PileGraphics : DrawableObject
         GraphicsEngine.SpriteBatch.Draw(Art.Pixel, Location, new Color(48, 90, 70));
     }
 
-    public void DrawBug(Action<HexPoint, HexPoint> tileDraw, string numberString, int bufferSize)
+    public void DrawBug(Action<HexPoint, HexPoint> tileDraw, HexPoint position, string numberString)
     {
-        int halfTileSize = _tileSize / 2;
+        var halfTileSize = _tileSize / 2;
+        tileDraw(new HexPoint(position.X + halfTileSize, position.Y + halfTileSize), new HexPoint(_tileSize, _tileSize));
 
-        tileDraw(new HexPoint(Location.Left + bufferSize + halfTileSize, Location.Top + halfTileSize), new HexPoint(_tileSize, _tileSize));
-
-        DrawString(numberString, bufferSize);
+        DrawString(numberString, (int)position.X - Location.X);
     }
 
     private void DrawString(string numberString, int bufferSize)
     {
         var fontSize = Art.PileFont.MeasureString(numberString);
-        GraphicsEngine.SpriteBatch.DrawString(Art.PileFont, numberString, new Vector2(Location.Left + bufferSize + _tileSize - 5, Location.Bottom - fontSize.Y), Color.MintCream);
+        GraphicsEngine.SpriteBatch.DrawString(Art.PileFont, numberString, new Vector2(Location.Left + bufferSize + _tileSize - 10, Location.Bottom - fontSize.Y - 5), Color.MintCream);
     }
 }

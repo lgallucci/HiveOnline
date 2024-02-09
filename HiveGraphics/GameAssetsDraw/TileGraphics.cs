@@ -10,9 +10,8 @@ public class TileGraphics : DrawableObject
     {
         var texture = GetTexture(bugType, team);
 
-        //var bloom = GraphicsEngine.BloomFilter.Draw(texture, texture.Width, texture.Height);
-        //GraphicsEngine.SetRenderTarget(null);
-
+        //TODO: Draw beetles and children slightly offset
+        
         GraphicsEngine.SpriteBatch.Draw(
             texture,
             location.ToVector2(),
@@ -22,15 +21,11 @@ public class TileGraphics : DrawableObject
             new Vector2((float)texture.Width / 2, (float)texture.Width / 2),
             new Vector2((float)tileSize.X / texture.Width, (float)tileSize.Y / texture.Height), //Scale
             SpriteEffects.None, 0f);
-
-
-        //GraphicsEngine.SpriteBatch.Draw(bloom, new Rectangle(0, 0, texture.Width, texture.Height), Color.Red);
     }
 
-    public void Draw(BugType bugType, BugTeam team, Layout layout, Hex location, HexPoint tileSize)
+    public void DrawCoordinates(Layout layout, Hex location)
     {
         var vector2 = layout.HexToPixel(location);
-        Draw(bugType, team, vector2, tileSize);
 
         GraphicsEngine.SpriteBatch.DrawString(Art.PileFont, $"{location.q}, {location.r}, {location.s}",
             new Vector2((float)vector2.X - 30, (float)vector2.Y - 7), Color.Red);

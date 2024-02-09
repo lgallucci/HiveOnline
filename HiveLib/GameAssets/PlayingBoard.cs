@@ -12,7 +12,6 @@ namespace HiveOnline.GameAssets
     public class PlayingBoard : IBoard
     {
         public Layout Layout { get; set; }
-
         public ChatBox ChatWindow { get; set; }
 
         public ITile SelectedTile { get; set; }
@@ -21,7 +20,6 @@ namespace HiveOnline.GameAssets
 
         public string UserName { get; set; } = "TestUser";
         public Pile UserPile { get; set; }
-
         public string OpponentName { get; set; } = "TestOpponent";
         public Pile OpponentPile { get; set; }
 
@@ -42,7 +40,7 @@ namespace HiveOnline.GameAssets
             Graphics.Draw(UserName, OpponentName);
 
             //Draw Grid
-            foreach (var tile in Tiles)
+            foreach (var tile in Tiles.OrderBy(kvp => kvp.Value.Type))
             {
                 tile.Value.Draw(this);
             }
@@ -50,20 +48,27 @@ namespace HiveOnline.GameAssets
             foreach (var tile in AvailableTiles)
             {
                 Graphics.DrawHexagon(Layout, tile.Value, 170, 189, 100);
+                //Graphics.DrawText(Layout, tile.Value, $"{tile.Value.q}, {tile.Value.r}, {tile.Value.s}", 255, 247, 0);
             }
-
-            if (SelectedTile != null && !SelectedTile.Equals(default(Hex)))
-                Graphics.DrawHexagon(Layout, SelectedTile.Location, 4, 217, 255); 
 
             DrawPiles();
 
             ChatWindow.Draw();
+
+            if (SelectedTile != null)
+            {
+                if (ContainsTile(SelectedTile))
+                    Graphics.DrawHexagon(Layout, SelectedTile.Location, 4, 217, 255);
+                else
+                    UserPile.DrawSelected(this, SelectedTile.Type);
+            }
+
         }
 
         private void DrawPiles()
         {
-            UserPile.Draw(this);
-            OpponentPile.Draw(this);
+            UserPile.Draw();
+            OpponentPile.Draw();
         }
 
         public void SetScreenSize(int width, int height)
@@ -120,6 +125,7 @@ namespace HiveOnline.GameAssets
 
         public void ClearAvailableTiles()
         {
+            TestSpots.Clear();
             AvailableTiles.Clear();
         }
 

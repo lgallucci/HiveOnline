@@ -4,7 +4,9 @@ using HiveLib.Bugs;
 using HiveLib.GameAssets;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Metrics;
 using System.Drawing;
+using System.Linq;
 using System.Numerics;
 
 namespace HiveOnline.GameAssets
@@ -22,6 +24,14 @@ namespace HiveOnline.GameAssets
         private BugTeam _team { get; set; }
 
         private int _tileSize = 75;
+        public HexPoint BeetleLocation { get; set; }
+        public HexPoint GrasshoppersLocation { get; set; }
+        public HexPoint LadyBugsLocation { get; set; }
+        public HexPoint MosquitosLocation { get; set; }
+        public HexPoint PillBugsLocation { get; set; }
+        public HexPoint QueenBeesLocation { get; set; }
+        public HexPoint SoldierAntsLocation { get; set; }
+        public HexPoint SpidersLocation { get; set; }
 
         private PileGraphics Graphics { get; set; }
 
@@ -34,7 +44,7 @@ namespace HiveOnline.GameAssets
                     int queenBeeCount = 1,
                     int soldierAntCount = 3,
                     int spiderCount = 2)
-        { 
+        {
             Graphics = new PileGraphics(_tileSize);
             _team = team;
             while (beetleCount > 0 || grasshopperCount > 3 || ladyBugCount > 0 || mosquitoCount > 0 || pillBugCount > 0 || queenBeeCount > 0 || soldierAntCount > 0 || spiderCount > 0)
@@ -46,7 +56,7 @@ namespace HiveOnline.GameAssets
                         Beetles = new Stack<Beetle>();
                         _stackCount++;
                     }
-                    Beetles.Push(new Beetle(_team));
+                    Beetles.Push(new Beetle(_team) { Location = new Hex(-100, 50, 50) });
                     beetleCount--;
                 }
                 if (grasshopperCount > 0)
@@ -56,7 +66,7 @@ namespace HiveOnline.GameAssets
                         Grasshoppers = new Stack<Grasshopper>();
                         _stackCount++;
                     }
-                    Grasshoppers.Push(new Grasshopper(_team));
+                    Grasshoppers.Push(new Grasshopper(_team) { Location = new Hex(-100, 50, 50) });
                     grasshopperCount--;
                 }
                 if (ladyBugCount > 0)
@@ -66,7 +76,7 @@ namespace HiveOnline.GameAssets
                         LadyBugs = new Stack<LadyBug>();
                         _stackCount++;
                     }
-                    LadyBugs.Push(new LadyBug(_team));
+                    LadyBugs.Push(new LadyBug(_team) { Location = new Hex(-100, 50, 50) });
                     ladyBugCount--;
                 }
                 if (mosquitoCount > 0)
@@ -76,7 +86,7 @@ namespace HiveOnline.GameAssets
                         Mosquitos = new Stack<Mosquito>();
                         _stackCount++;
                     }
-                    Mosquitos.Push(new Mosquito(_team));
+                    Mosquitos.Push(new Mosquito(_team) { Location = new Hex(-100, 50, 50) });
                     mosquitoCount--;
                 }
                 if (pillBugCount > 0)
@@ -86,7 +96,7 @@ namespace HiveOnline.GameAssets
                         PillBugs = new Stack<PillBug>();
                         _stackCount++;
                     }
-                    PillBugs.Push(new PillBug(_team));
+                    PillBugs.Push(new PillBug(_team) { Location = new Hex(-100, 50, 50) });
                     pillBugCount--;
                 }
                 if (queenBeeCount > 0)
@@ -96,7 +106,7 @@ namespace HiveOnline.GameAssets
                         QueenBees = new Stack<QueenBee>();
                         _stackCount++;
                     }
-                    QueenBees.Push(new QueenBee(_team));
+                    QueenBees.Push(new QueenBee(_team) { Location = new Hex(-100, 50, 50) });
                     queenBeeCount--;
                 }
                 if (soldierAntCount > 0)
@@ -106,7 +116,7 @@ namespace HiveOnline.GameAssets
                         SoldierAnts = new Stack<SoldierAnt>();
                         _stackCount++;
                     }
-                    SoldierAnts.Push(new SoldierAnt(_team));
+                    SoldierAnts.Push(new SoldierAnt(_team) { Location = new Hex(-100, 50, 50) });
                     soldierAntCount--;
                 }
                 if (spiderCount > 0)
@@ -116,7 +126,7 @@ namespace HiveOnline.GameAssets
                         Spiders = new Stack<Spider>();
                         _stackCount++;
                     }
-                    Spiders.Push(new Spider(_team));
+                    Spiders.Push(new Spider(_team) { Location = new Hex(-100, 50, 50) });
                     spiderCount--;
                 }
             }
@@ -127,98 +137,253 @@ namespace HiveOnline.GameAssets
         internal void ChangeScreenSize(int width, int height, bool isOpponent)
         {
             Graphics.ChangeScreenSize(width, height, _stackCount, _placementWidth, isOpponent);
+            ResizePile();
         }
 
-        public void Draw(PlayingBoard board)
+        public bool Intersects(int x, int y)
+        {
+            if (Graphics.Location.Contains(x, y)) return true;
+            return false;
+        }
+
+        public ITile GetIntersectBug(int x, int y)
+        {
+            if (BeetleLocation.Contains(x, y, _tileSize, _tileSize) && Beetles.Count > 0)
+                return Beetles.Peek();
+
+            if (GrasshoppersLocation.Contains(x, y, _tileSize, _tileSize) && Grasshoppers.Count > 0)
+                return Grasshoppers.Peek();
+
+            if (LadyBugsLocation.Contains(x, y, _tileSize, _tileSize) && LadyBugs.Count > 0)
+                return LadyBugs.Peek();
+
+            if (MosquitosLocation.Contains(x, y, _tileSize, _tileSize) && Mosquitos.Count > 0)
+                return Mosquitos.Peek();
+
+            if (PillBugsLocation.Contains(x, y, _tileSize, _tileSize) && PillBugs.Count > 0)
+                return PillBugs.Peek();
+
+            if (QueenBeesLocation.Contains(x, y, _tileSize, _tileSize) && QueenBees.Count > 0)
+                return QueenBees.Peek();
+
+            if (SoldierAntsLocation.Contains(x, y, _tileSize, _tileSize) && SoldierAnts.Count > 0)
+                return SoldierAnts.Peek();
+
+            if (SpidersLocation.Contains(x, y, _tileSize, _tileSize) && Spiders.Count > 0)
+                return Spiders.Peek();
+
+            return null;
+        }
+
+        public void Draw()
         {
             Graphics.DrawBox();
-            var halfTileSize = _tileSize / 2;
 
+            if (Beetles?.Count > 0)
+            {
+                Graphics.DrawBug((location, size) => Beetles.Peek().Draw(location, size), BeetleLocation,
+                $"x{Beetles.Count}");
+            }
+            if (Grasshoppers?.Count > 0)
+            {
+                Graphics.DrawBug((location, size) => Grasshoppers.Peek().Draw(location, size), GrasshoppersLocation,
+                    $"x{Grasshoppers.Count}");
+            }
+            if (LadyBugs?.Count > 0)
+            {
+                Graphics.DrawBug((location, size) => LadyBugs.Peek().Draw(location, size), LadyBugsLocation,
+                    $"x{LadyBugs.Count}");
+            }
+            if (Mosquitos?.Count > 0)
+            {
+                Graphics.DrawBug((location, size) => Mosquitos.Peek().Draw(location, size), MosquitosLocation,
+                    $"x{Mosquitos.Count}");
+            }
+            if (PillBugs?.Count > 0)
+            {
+                Graphics.DrawBug((location, size) => PillBugs.Peek().Draw(location, size), PillBugsLocation,
+                    $"x{PillBugs.Count}");
+            }
+            if (QueenBees?.Count > 0)
+            {
+                Graphics.DrawBug((location, size) => QueenBees.Peek().Draw(location, size), QueenBeesLocation,
+                    $"x{QueenBees.Count}");
+            }
+            if (SoldierAnts?.Count > 0)
+            {
+                Graphics.DrawBug((location, size) => SoldierAnts.Peek().Draw(location, size), SoldierAntsLocation,
+                    $"x{SoldierAnts.Count}");
+            }
+            if (Spiders?.Count > 0)
+            {
+                Graphics.DrawBug((location, size) => Spiders.Peek().Draw(location, size), SpidersLocation,
+                    $"x{Spiders.Count}");
+            }
+        }
+
+        private void ResizePile()
+        {
             int bufferSize = 0;
             if (Beetles?.Count > 0)
             {
-                var location = new HexPoint(Graphics.Location.Left + bufferSize + halfTileSize, Graphics.Location.Top + halfTileSize);
-                Graphics.DrawBug((location, size) => Beetles.Peek().Draw(location, size),
-                    $"x{Beetles.Count}", bufferSize);
-
+                BeetleLocation = new HexPoint(Graphics.Location.Left + bufferSize, Graphics.Location.Top);
                 bufferSize += _placementWidth;
             }
             if (Grasshoppers?.Count > 0)
             {
-                var location = new HexPoint(Graphics.Location.Left + bufferSize + halfTileSize, Graphics.Location.Top + halfTileSize);
-                Graphics.DrawBug((location, size) => Grasshoppers.Peek().Draw(location, size),
-                    $"x{Grasshoppers.Count}", bufferSize);
-
+                GrasshoppersLocation = new HexPoint(Graphics.Location.Left + bufferSize, Graphics.Location.Top);
                 bufferSize += _placementWidth;
             }
             if (LadyBugs?.Count > 0)
             {
-                var location = new HexPoint(Graphics.Location.Left + bufferSize + halfTileSize, Graphics.Location.Top + halfTileSize);
-                Graphics.DrawBug((location, size) => LadyBugs.Peek().Draw(location, size),
-                    $"x{LadyBugs.Count}", bufferSize);
-
+                LadyBugsLocation = new HexPoint(Graphics.Location.Left + bufferSize, Graphics.Location.Top);
                 bufferSize += _placementWidth;
             }
             if (Mosquitos?.Count > 0)
             {
-                var location = new HexPoint(Graphics.Location.Left + bufferSize + halfTileSize, Graphics.Location.Top + halfTileSize);
-                Graphics.DrawBug((location, size) => Mosquitos.Peek().Draw(location, size),
-                    $"x{Mosquitos.Count}", bufferSize);
-
+                MosquitosLocation = new HexPoint(Graphics.Location.Left + bufferSize, Graphics.Location.Top);
                 bufferSize += _placementWidth;
             }
             if (PillBugs?.Count > 0)
             {
-                var location = new HexPoint(Graphics.Location.Left + bufferSize + halfTileSize, Graphics.Location.Top + halfTileSize);
-                Graphics.DrawBug((location, size) => PillBugs.Peek().Draw(location, size),
-                    $"x{PillBugs.Count}", bufferSize);
-
+                PillBugsLocation = new HexPoint(Graphics.Location.Left + bufferSize, Graphics.Location.Top);
                 bufferSize += _placementWidth;
             }
             if (QueenBees?.Count > 0)
             {
-                var location = new HexPoint(Graphics.Location.Left + bufferSize + halfTileSize, Graphics.Location.Top + halfTileSize);
-                Graphics.DrawBug((location, size) => QueenBees.Peek().Draw(location, size),
-                    $"x{QueenBees.Count}", bufferSize);
-
+                QueenBeesLocation = new HexPoint(Graphics.Location.Left + bufferSize, Graphics.Location.Top);
                 bufferSize += _placementWidth;
             }
             if (SoldierAnts?.Count > 0)
             {
-                var location = new HexPoint(Graphics.Location.Left + bufferSize + halfTileSize, Graphics.Location.Top + halfTileSize);
-                Graphics.DrawBug((location, size) => SoldierAnts.Peek().Draw(location, size),
-                    $"x{SoldierAnts.Count}", bufferSize);
-
+                SoldierAntsLocation = new HexPoint(Graphics.Location.Left + bufferSize, Graphics.Location.Top);
                 bufferSize += _placementWidth;
             }
             if (Spiders?.Count > 0)
             {
-                var bugLocation = new HexPoint(Graphics.Location.Left + bufferSize + halfTileSize, Graphics.Location.Top + halfTileSize);
-                Graphics.DrawBug((location, size) => Spiders.Peek().Draw(location, size),
-                    $"x{Spiders.Count}", bufferSize);
+                SpidersLocation = new HexPoint(Graphics.Location.Left + bufferSize, Graphics.Location.Top);
             }
         }
 
         public ITile GetTile(BugType bugType)
         {
+            ITile tile = null;
             switch (bugType)
             {
                 case BugType.Beetle:
-                    return Beetles.Pop();
+                    tile =  Beetles.Pop();
+                    break;
                 case BugType.Grasshopper:
-                    return Grasshoppers.Pop();
+                    tile =  Grasshoppers.Pop();
+                    break;
                 case BugType.LadyBug:
-                    return LadyBugs.Pop();
+                    tile =  LadyBugs.Pop();
+                    break;
                 case BugType.Mosquito:
-                    return Mosquitos.Pop();
+                    tile =  Mosquitos.Pop();
+                    break;
                 case BugType.PillBug:
-                    return PillBugs.Pop();
+                    tile =  PillBugs.Pop();
+                    break;
+                case BugType.QueenBee:
+                    tile =  QueenBees.Pop();
+                    break;
                 case BugType.SoldierAnt:
-                    return SoldierAnts.Pop();
+                    tile =  SoldierAnts.Pop();
+                    break;
                 case BugType.Spider:
-                    return Spiders.Pop();
+                    tile =  Spiders.Pop();
+                    break;
             }
-            return null;
+            ResizePile();
+            return tile;
+        }
+
+        public List<Hex> CalculateAvailable(PlayingBoard board)
+        {
+            var availableTiles = new List<Hex>();
+
+            if (board.Tiles.Count > 0)
+            {
+                foreach (var tile in board.Tiles.Where(t => t.Value.Team == BugTeam.Light))
+                {
+                    for (int i = 0; i < 6; i++)
+                    {
+                        if (!board.Tiles.ContainsKey(tile.Value.Location.Neighbor(i).GetHashCode()))
+                        {
+                            bool _foundDark = false;
+                            for (int j = 0; j < 6; j++)
+                            {
+                                if (board.Tiles.ContainsKey(tile.Value.Location.Neighbor(i).Neighbor(j).GetHashCode()) &&
+                                    board.Tiles[tile.Value.Location.Neighbor(i).Neighbor(j).GetHashCode()].Team == BugTeam.Dark)
+                                {
+                                    _foundDark = true;
+                                    break;
+                                }
+                            }
+                            if (!_foundDark && !availableTiles.Contains(tile.Value.Location.Neighbor(i)))
+                            {
+                                availableTiles.Add(tile.Value.Location.Neighbor(i));
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                availableTiles.Add(new Hex(0, 0, 0));
+            }
+            return availableTiles;
+        }
+
+        internal void DrawSelected(PlayingBoard board, BugType bugType)
+        {
+            HexPoint location;
+            switch (bugType)
+            {
+                case BugType.Beetle:
+                    location = BeetleLocation;
+                    break;
+                case BugType.Grasshopper:
+                    location = GrasshoppersLocation;
+                    break;
+                case BugType.LadyBug:
+                    location = LadyBugsLocation;
+                    break;
+                case BugType.Mosquito:
+                    location = MosquitosLocation;
+                    break;
+                case BugType.PillBug:
+                    location = PillBugsLocation;
+                    break;
+                case BugType.QueenBee:
+                    location = QueenBeesLocation;
+                    break;
+                case BugType.SoldierAnt:
+                    location = SoldierAntsLocation;
+                    break;
+                case BugType.Spider:
+                    location = SpidersLocation;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(bugType));
+            }
+
+            board.Graphics.DrawHexagon(GetCornersFromPoint(location), 4, 217, 255);
+        }
+
+        private List<HexPoint> GetCornersFromPoint(HexPoint location)
+        {
+            var halfTileSize = _tileSize / 2;
+            var corners = new List<HexPoint>();
+            for (int i = 0; i < 6; i++)
+            {
+                double angle = 2.0 * Math.PI * (0 - i) / 6.0;
+                var offset =  new HexPoint(halfTileSize * Math.Cos(angle), halfTileSize * Math.Sin(angle));
+
+                corners.Add(new HexPoint(location.X + offset.X + halfTileSize, location.Y + offset.Y + halfTileSize));
+            }
+            return corners;
         }
     }
 }

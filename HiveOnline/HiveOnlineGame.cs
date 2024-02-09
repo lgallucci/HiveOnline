@@ -41,6 +41,8 @@ namespace HiveOnline
 
             Content.RootDirectory = "Content";
 
+            //this.IsFixedTimeStep = false;
+            //this.TargetElapsedTime = TimeSpan.FromSeconds(1d / 120d); //60);
             this.IsMouseVisible = true;
             Window.AllowUserResizing = true;
             Window.ClientSizeChanged += Window_ClientSizeChanged;
@@ -54,8 +56,6 @@ namespace HiveOnline
         /// </summary>
         protected override void Initialize()
         {
-            // TODO: Add your initialization logic here     
-
             base.Initialize();
         }
 
@@ -80,7 +80,6 @@ namespace HiveOnline
         /// </summary>
         protected override void LoadContent()
         {
-            // TODO: use this.Content to load your game content here
             _gameEngine = new OpeningScreenEngine();
             _hiveClient = new HiveGameClient(_address, _port);
             SetWindowSize();
@@ -93,7 +92,6 @@ namespace HiveOnline
         /// </summary>
         protected override void UnloadContent()
         {
-            // TODO: Unload any non ContentManager content here
             _graphicsEngine.Unload();
         }
 
@@ -107,19 +105,18 @@ namespace HiveOnline
             //if (Keyboard.GetState().IsKeyDown(Keys.Escape))
             //    Exit();
 
-            // TODO: Add your update logic here
+            if (IsActive)
+            {
+                GameState _previousState = _gameState;
+                _gameEngine.Update(ref _gameState);
 
-            GameState _previousState = _gameState;
-
-            _gameEngine.Update(ref _gameState);
-
-            if (_gameState == GameState.Playing && _previousState != GameState.Playing)
-                _gameEngine = new RunningGameEngine(_screenWidth, _screenHeight, BugTeam.Light);
-            if (_gameState == GameState.OpeningScreen && _previousState != GameState.OpeningScreen)
-                _gameEngine = new OpeningScreenEngine();
-            if (_gameState == GameState.ConnectToServer && _previousState != GameState.ConnectToServer)
-                _gameEngine = new ConnectToServerEngine();
-
+                if (_gameState == GameState.Playing && _previousState != GameState.Playing)
+                    _gameEngine = new RunningGameEngine(_screenWidth, _screenHeight, BugTeam.Light);
+                if (_gameState == GameState.OpeningScreen && _previousState != GameState.OpeningScreen)
+                    _gameEngine = new OpeningScreenEngine();
+                if (_gameState == GameState.ConnectToServer && _previousState != GameState.ConnectToServer)
+                    _gameEngine = new ConnectToServerEngine();
+            }
             base.Update(gameTime);
         }
 
@@ -131,7 +128,6 @@ namespace HiveOnline
         {
             GraphicsDevice.Clear(new Color(53, 101, 77));
 
-            // TODO: Add your drawing code here
             _graphicsEngine.BeingSprites();
 
             _gameEngine.Draw(_graphicsEngine);

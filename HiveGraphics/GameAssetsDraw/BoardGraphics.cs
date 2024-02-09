@@ -1,6 +1,7 @@
 ﻿
 using HiveContracts;
 using System;
+using System.Collections.Generic;
 
 namespace HiveGraphics.GameAssetsDraw;
 public class BoardGraphics : DrawableObject
@@ -17,9 +18,14 @@ public class BoardGraphics : DrawableObject
 
     public void DrawHexagon(Layout layout, Hex location, int colorR, int colorG, int colorB)
     {
+        DrawHexagon(layout.PolygonCorners(location), colorR, colorG, colorB);
+    }
+
+    public void DrawHexagon(List<HexPoint> corners, int colorR, int colorG, int colorB)
+    { 
         HexPoint firstPoint = new HexPoint(0, 0);
         Nullable<HexPoint> previousPoint = null;
-        foreach (var corner in layout.PolygonCorners(location))
+        foreach (var corner in corners)
         {
             if (previousPoint.HasValue)
             {
@@ -40,7 +46,7 @@ public class BoardGraphics : DrawableObject
     {
         var vector2 = layout.HexToPixel(location);
 
-        GraphicsEngine.SpriteBatch.DrawString(Art.PileFont, text,
+        GraphicsEngine.SpriteBatch.DrawString(Art.ChatFont, text,
             new Vector2((float)vector2.X - 30, (float)vector2.Y - 7), new Color(colorR, colorG, colorB));
     }
 }
