@@ -31,6 +31,7 @@ namespace Unclassified.Net
 		private NetworkStream stream;
 		private TaskCompletionSource<bool> closedTcs = new TaskCompletionSource<bool>();
 
+		public bool IsConnected { get { return tcpClient.Connected; } }
 		#endregion Private data
 
 		#region Constructors

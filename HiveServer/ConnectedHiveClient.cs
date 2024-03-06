@@ -12,8 +12,11 @@ namespace HiveServer
 
         private AsyncTcpClient tcpClient;
 
+        public Guid Identifier { get; internal set; }
+
         public ConnectedHiveClient(TcpClient tcpClient)
         {
+            Identifier = Guid.NewGuid();
             this.tcpClient = new AsyncTcpClient
             {
                 ServerTcpClient = tcpClient,
@@ -34,7 +37,7 @@ namespace HiveServer
         {
             byte[] bytes = client.ByteBuffer.Dequeue(count);
             string message = Encoding.UTF8.GetString(bytes, 0, bytes.Length);
-            Console.WriteLine("Server client: received: " + message);
+            Console.WriteLine($"Server client {Identifier}: received: {message}");
 
             bytes = Encoding.UTF8.GetBytes("You said: " + message);
             await client.Send(new ArraySegment<byte>(bytes, 0, bytes.Length));

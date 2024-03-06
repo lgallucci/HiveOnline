@@ -12,7 +12,6 @@ using System.Linq;
 
 namespace HiveOnline
 {
-
     public enum PlayingState
     {
         YourTurn = 0,
@@ -20,13 +19,14 @@ namespace HiveOnline
         Won = 2,
         Lost = 3,
     }
+
     class RunningGameEngine : GameEngine
     {
         private PlayingBoard _board;
         private int _screenWidth = 0;
         private int _screenHeight = 0;
         private PlayingState _playingState;
-        private bool _testing = true;
+        private bool _testing = false;
 
         public RunningGameEngine(int screenWidth, int screenHeight, BugTeam team)
         {
@@ -40,15 +40,14 @@ namespace HiveOnline
             else
                 _playingState = PlayingState.OpponentsTurn;
 
-            //if (_testing)
-            //    //foreach (var testTile in TestBoard.GetTestBoard())
-            //    foreach (var testTile in TestBoard.GetSpiderAntTestBoard())
-            //    {
-            //        _board.AddTile(testTile);
-            //    }
-            //else
-            //    _board.AddTile(new QueenBee(BugTeam.Light) { Location = new Hex(0, 0, 0) });
-            _board.AddAvailableHexes(new List<Hex> { new Hex(0, 0, 0) });
+            if (_testing)
+                //foreach (var testTile in TestBoard.GetTestBoard())
+                foreach (var testTile in TestBoard.GetSpiderAntTestBoard())
+                {
+                    _board.AddTile(testTile);
+                }
+            else
+                _board.AddAvailableHexes(new List<Hex> { new Hex(0, 0, 0) });
         }
 
         public override void SetScreenSize(int screenWidth, int screenHeight)

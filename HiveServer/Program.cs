@@ -1,14 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace HiveServer
 {
     class Program
     {
-        static void Main(string[] args)
+        static async void Main(string[] args)
         {
-            new GameServer().Run();
+            IHost host = Host.CreateDefaultBuilder(args)
+                .ConfigureServices(services =>
+                {
+                    services.AddHostedService<GameServer>();
+                })
+                .Build();
+
+            await host.RunAsync();
         }
     }
 }

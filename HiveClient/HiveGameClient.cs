@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading.Tasks;
 using Unclassified.Net;
 
@@ -11,6 +12,8 @@ namespace HiveClient
         private int _port;
         private AsyncTcpClient _tcpClient;
         private bool disposedValue;
+
+        public bool IsConnected { get { return _tcpClient?.IsConnected ?? false; } }
 
         public HiveGameClient(string address, int port)
         {
@@ -32,14 +35,26 @@ namespace HiveClient
             await _tcpClient.RunAsync();
         }
 
-        private Task ClientReceived(AsyncTcpClient arg1, int arg2)
+        private Task ClientReceived(AsyncTcpClient client, int length)
         {
-            throw new NotImplementedException();
+            var buffer = client.ByteBuffer.Dequeue(length);
+            string message = Encoding.UTF8.GetString(buffer, 0, length);
+            Console.WriteLine($"Client Received: {message}");
+
+            return Task.CompletedTask;
         }
 
-        private Task ClientConnected(AsyncTcpClient arg1, bool arg2)
+        private Task ClientConnected(AsyncTcpClient client, bool isReconnect)
         {
-            throw new NotImplementedException();
+            Console.WriteLine($"Connected! {(isReconnect ? "isReconnect" : "")}");
+
+            return Task.CompletedTask;
+        }
+
+        public async Task SendMessage(string message)
+        {
+            var bytes = Encoding.UTF8.GetBytes(message);
+            await _tcpClient.Send(bytes);
         }
 
         //Reconnect on d/c
