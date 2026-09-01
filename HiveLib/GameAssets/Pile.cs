@@ -299,29 +299,34 @@ namespace HiveOnline.GameAssets
             return tile;
         }
 
-        public List<Hex> CalculateAvailable(PlayingBoard board)
+        public List<Hex> CalculateAvailable(PlayingBoard board, BugTeam team = BugTeam.Light)
         {
             var availableTiles = new List<Hex>();
 
             if (board.Tiles.Count > 0)
             {
-                foreach (var tile in board.Tiles.Where(t => t.Value.Team == BugTeam.Light))
+                // Find placements around tiles of the same team
+                foreach (var tile in board.Tiles.Where(t => t.Value.Team == team))
                 {
                     for (int i = 0; i < 6; i++)
                     {
                         if (!board.Tiles.ContainsKey(tile.Value.Location.Neighbor(i).GetHashCode()))
                         {
-                            bool _foundDark = false;
+                            bool _foundOpponent = false;
+                            // Check if any neighboring position has an opponent's piece
                             for (int j = 0; j < 6; j++)
                             {
-                                if (board.Tiles.ContainsKey(tile.Value.Location.Neighbor(i).Neighbor(j).GetHashCode()) &&
-                                    board.Tiles[tile.Value.Location.Neighbor(i).Neighbor(j).GetHashCode()].Team == BugTeam.Dark)
+                                if (board.Tiles.ContainsKey(tile.Value.Location.Neighbor(i).Neighbor(j).GetHashCode()))
                                 {
-                                    _foundDark = true;
-                                    break;
+                                    var neighborTile = board.Tiles[tile.Value.Location.Neighbor(i).Neighbor(j).GetHashCode()];
+                                    if (neighborTile.Team != team)
+                                    {
+                                        _foundOpponent = true;
+                                        break;
+                                    }
                                 }
                             }
-                            if (!_foundDark && !availableTiles.Contains(tile.Value.Location.Neighbor(i)))
+                            if (!_foundOpponent && !availableTiles.Contains(tile.Value.Location.Neighbor(i)))
                             {
                                 availableTiles.Add(tile.Value.Location.Neighbor(i));
                             }

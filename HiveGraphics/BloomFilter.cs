@@ -415,152 +415,151 @@ namespace HiveLib
             _graphicsDevice.RasterizerState = RasterizerState.CullNone;
             _graphicsDevice.BlendState = BlendState.Opaque;
 
-            //EXTRACT  //Note: Is setRenderTargets(binding better?)
-            //We extract the bright values which are above the Threshold and save them to Mip0
+            //EXTRACT
             _graphicsDevice.SetRenderTarget(_bloomRenderTarget2DMip0);
 
-            //BloomScreenTexture = inputTexture;
-            //BloomInverseResolution = new Vector2(1.0f / _width, 1.0f / _height);
+            BloomScreenTexture = inputTexture;
+            BloomInverseResolution = new Vector2(1.0f / _width, 1.0f / _height);
 
-            //if (BloomUseLuminance) _bloomPassExtractLuminance.Apply();
-            //else _bloomPassExtract.Apply();
-            //_quadRenderer.RenderQuad(_graphicsDevice, Vector2.One * -1, Vector2.One);
+            if (BloomUseLuminance) _bloomPassExtractLuminance.Apply();
+            else _bloomPassExtract.Apply();
+            _quadRenderer.RenderQuad(_graphicsDevice, Vector2.One * -1, Vector2.One);
 
             //Now downsample to the next lower mip texture
-            //if (BloomDownsamplePasses > 0)
-            //{
-            //    //DOWNSAMPLE TO MIP1
-            //    _graphicsDevice.SetRenderTarget(_bloomRenderTarget2DMip1);
+            if (BloomDownsamplePasses > 0)
+            {
+                //DOWNSAMPLE TO MIP1
+                _graphicsDevice.SetRenderTarget(_bloomRenderTarget2DMip1);
 
-            //    BloomScreenTexture = _bloomRenderTarget2DMip0;
-            //    //Pass
-            //    _bloomPassDownsample.Apply();
-            //    _quadRenderer.RenderQuad(_graphicsDevice, Vector2.One * -1, Vector2.One);
+                BloomScreenTexture = _bloomRenderTarget2DMip0;
+                //Pass
+                _bloomPassDownsample.Apply();
+                _quadRenderer.RenderQuad(_graphicsDevice, Vector2.One * -1, Vector2.One);
 
-            //    if (BloomDownsamplePasses > 1)
-            //    {
-            //        //Our input resolution is halfed, so our inverse 1/res. must be doubled
-            //        BloomInverseResolution *= 2;
+                if (BloomDownsamplePasses > 1)
+                {
+                    //Our input resolution is halfed, so our inverse 1/res. must be doubled
+                    BloomInverseResolution *= 2;
 
-            //        //DOWNSAMPLE TO MIP2
-            //        _graphicsDevice.SetRenderTarget(_bloomRenderTarget2DMip2);
+                    //DOWNSAMPLE TO MIP2
+                    _graphicsDevice.SetRenderTarget(_bloomRenderTarget2DMip2);
 
-            //        BloomScreenTexture = _bloomRenderTarget2DMip1;
-            //        //Pass
-            //        _bloomPassDownsample.Apply();
-            //        _quadRenderer.RenderQuad(_graphicsDevice, Vector2.One * -1, Vector2.One);
+                    BloomScreenTexture = _bloomRenderTarget2DMip1;
+                    //Pass
+                    _bloomPassDownsample.Apply();
+                    _quadRenderer.RenderQuad(_graphicsDevice, Vector2.One * -1, Vector2.One);
 
-            //        if (BloomDownsamplePasses > 2)
-            //        {
-            //            BloomInverseResolution *= 2;
+                    if (BloomDownsamplePasses > 2)
+                    {
+                        BloomInverseResolution *= 2;
 
-            //            //DOWNSAMPLE TO MIP3
-            //            _graphicsDevice.SetRenderTarget(_bloomRenderTarget2DMip3);
+                        //DOWNSAMPLE TO MIP3
+                        _graphicsDevice.SetRenderTarget(_bloomRenderTarget2DMip3);
 
-            //            BloomScreenTexture = _bloomRenderTarget2DMip2;
-            //            //Pass
-            //            _bloomPassDownsample.Apply();
-            //            _quadRenderer.RenderQuad(_graphicsDevice, Vector2.One * -1, Vector2.One);
+                        BloomScreenTexture = _bloomRenderTarget2DMip2;
+                        //Pass
+                        _bloomPassDownsample.Apply();
+                        _quadRenderer.RenderQuad(_graphicsDevice, Vector2.One * -1, Vector2.One);
 
-            //            if (BloomDownsamplePasses > 3)
-            //            {
-            //                BloomInverseResolution *= 2;
+                        if (BloomDownsamplePasses > 3)
+                        {
+                            BloomInverseResolution *= 2;
 
-            //                //DOWNSAMPLE TO MIP4
-            //                _graphicsDevice.SetRenderTarget(_bloomRenderTarget2DMip4);
+                            //DOWNSAMPLE TO MIP4
+                            _graphicsDevice.SetRenderTarget(_bloomRenderTarget2DMip4);
 
-            //                BloomScreenTexture = _bloomRenderTarget2DMip3;
-            //                //Pass
-            //                _bloomPassDownsample.Apply();
-            //                _quadRenderer.RenderQuad(_graphicsDevice, Vector2.One * -1, Vector2.One);
+                            BloomScreenTexture = _bloomRenderTarget2DMip3;
+                            //Pass
+                            _bloomPassDownsample.Apply();
+                            _quadRenderer.RenderQuad(_graphicsDevice, Vector2.One * -1, Vector2.One);
 
-            //                if (BloomDownsamplePasses > 4)
-            //                {
-            //                    BloomInverseResolution *= 2;
+                            if (BloomDownsamplePasses > 4)
+                            {
+                                BloomInverseResolution *= 2;
 
-            //                    //DOWNSAMPLE TO MIP5
-            //                    _graphicsDevice.SetRenderTarget(_bloomRenderTarget2DMip5);
+                                //DOWNSAMPLE TO MIP5
+                                _graphicsDevice.SetRenderTarget(_bloomRenderTarget2DMip5);
 
-            //                    BloomScreenTexture = _bloomRenderTarget2DMip4;
-            //                    //Pass
-            //                    _bloomPassDownsample.Apply();
-            //                    _quadRenderer.RenderQuad(_graphicsDevice, Vector2.One * -1, Vector2.One);
+                                BloomScreenTexture = _bloomRenderTarget2DMip4;
+                                //Pass
+                                _bloomPassDownsample.Apply();
+                                _quadRenderer.RenderQuad(_graphicsDevice, Vector2.One * -1, Vector2.One);
 
-            //                    ChangeBlendState();
+                                ChangeBlendState();
 
-            //                    //UPSAMPLE TO MIP4
-            //                    _graphicsDevice.SetRenderTarget(_bloomRenderTarget2DMip4);
-            //                    BloomScreenTexture = _bloomRenderTarget2DMip5;
+                                //UPSAMPLE TO MIP4
+                                _graphicsDevice.SetRenderTarget(_bloomRenderTarget2DMip4);
+                                BloomScreenTexture = _bloomRenderTarget2DMip5;
 
-            //                    BloomStrength = _bloomStrength5;
-            //                    BloomRadius = _bloomRadius5;
-            //                    if (BloomUseLuminance) _bloomPassUpsampleLuminance.Apply();
-            //                    else _bloomPassUpsample.Apply();
-            //                    _quadRenderer.RenderQuad(_graphicsDevice, Vector2.One * -1, Vector2.One);
+                                BloomStrength = _bloomStrength5;
+                                BloomRadius = _bloomRadius5;
+                                if (BloomUseLuminance) _bloomPassUpsampleLuminance.Apply();
+                                else _bloomPassUpsample.Apply();
+                                _quadRenderer.RenderQuad(_graphicsDevice, Vector2.One * -1, Vector2.One);
 
-            //                    BloomInverseResolution /= 2;
-            //                }
+                                BloomInverseResolution /= 2;
+                            }
 
-            //                ChangeBlendState();
+                            ChangeBlendState();
 
-            //                //UPSAMPLE TO MIP3
-            //                _graphicsDevice.SetRenderTarget(_bloomRenderTarget2DMip3);
-            //                BloomScreenTexture = _bloomRenderTarget2DMip4;
+                            //UPSAMPLE TO MIP3
+                            _graphicsDevice.SetRenderTarget(_bloomRenderTarget2DMip3);
+                            BloomScreenTexture = _bloomRenderTarget2DMip4;
 
-            //                BloomStrength = _bloomStrength4;
-            //                BloomRadius = _bloomRadius4;
-            //                if (BloomUseLuminance) _bloomPassUpsampleLuminance.Apply();
-            //                else _bloomPassUpsample.Apply();
-            //                _quadRenderer.RenderQuad(_graphicsDevice, Vector2.One * -1, Vector2.One);
+                            BloomStrength = _bloomStrength4;
+                            BloomRadius = _bloomRadius4;
+                            if (BloomUseLuminance) _bloomPassUpsampleLuminance.Apply();
+                            else _bloomPassUpsample.Apply();
+                            _quadRenderer.RenderQuad(_graphicsDevice, Vector2.One * -1, Vector2.One);
 
-            //                BloomInverseResolution /= 2;
+                            BloomInverseResolution /= 2;
 
-            //            }
+                        }
 
-            //            ChangeBlendState();
+                        ChangeBlendState();
 
-            //            //UPSAMPLE TO MIP2
-            //            _graphicsDevice.SetRenderTarget(_bloomRenderTarget2DMip2);
-            //            BloomScreenTexture = _bloomRenderTarget2DMip3;
+                        //UPSAMPLE TO MIP2
+                        _graphicsDevice.SetRenderTarget(_bloomRenderTarget2DMip2);
+                        BloomScreenTexture = _bloomRenderTarget2DMip3;
 
-            //            BloomStrength = _bloomStrength3;
-            //            BloomRadius = _bloomRadius3;
-            //            if (BloomUseLuminance) _bloomPassUpsampleLuminance.Apply();
-            //            else _bloomPassUpsample.Apply();
-            //            _quadRenderer.RenderQuad(_graphicsDevice, Vector2.One * -1, Vector2.One);
+                        BloomStrength = _bloomStrength3;
+                        BloomRadius = _bloomRadius3;
+                        if (BloomUseLuminance) _bloomPassUpsampleLuminance.Apply();
+                        else _bloomPassUpsample.Apply();
+                        _quadRenderer.RenderQuad(_graphicsDevice, Vector2.One * -1, Vector2.One);
 
-            //            BloomInverseResolution /= 2;
+                        BloomInverseResolution /= 2;
 
-            //        }
+                    }
 
-            //        ChangeBlendState();
+                    ChangeBlendState();
 
-            //        //UPSAMPLE TO MIP1
-            //        _graphicsDevice.SetRenderTarget(_bloomRenderTarget2DMip1);
-            //        BloomScreenTexture = _bloomRenderTarget2DMip2;
+                    //UPSAMPLE TO MIP1
+                    _graphicsDevice.SetRenderTarget(_bloomRenderTarget2DMip1);
+                    BloomScreenTexture = _bloomRenderTarget2DMip2;
 
-            //        BloomStrength = _bloomStrength2;
-            //        BloomRadius = _bloomRadius2;
-            //        if (BloomUseLuminance) _bloomPassUpsampleLuminance.Apply();
-            //        else _bloomPassUpsample.Apply();
-            //        _quadRenderer.RenderQuad(_graphicsDevice, Vector2.One * -1, Vector2.One);
+                    BloomStrength = _bloomStrength2;
+                    BloomRadius = _bloomRadius2;
+                    if (BloomUseLuminance) _bloomPassUpsampleLuminance.Apply();
+                    else _bloomPassUpsample.Apply();
+                    _quadRenderer.RenderQuad(_graphicsDevice, Vector2.One * -1, Vector2.One);
 
-            //        BloomInverseResolution /= 2;
-            //    }
+                    BloomInverseResolution /= 2;
+                }
 
-            //    ChangeBlendState();
+                ChangeBlendState();
 
-            //    //UPSAMPLE TO MIP0
-            //    _graphicsDevice.SetRenderTarget(_bloomRenderTarget2DMip0);
-            //    BloomScreenTexture = _bloomRenderTarget2DMip1;
+                //UPSAMPLE TO MIP0
+                _graphicsDevice.SetRenderTarget(_bloomRenderTarget2DMip0);
+                BloomScreenTexture = _bloomRenderTarget2DMip1;
 
-            //    BloomStrength = _bloomStrength1;
-            //    BloomRadius = _bloomRadius1;
+                BloomStrength = _bloomStrength1;
+                BloomRadius = _bloomRadius1;
 
-            //    if (BloomUseLuminance) _bloomPassUpsampleLuminance.Apply();
-            //    else _bloomPassUpsample.Apply();
-            //    _quadRenderer.RenderQuad(_graphicsDevice, Vector2.One * -1, Vector2.One);
-            //}
+                if (BloomUseLuminance) _bloomPassUpsampleLuminance.Apply();
+                else _bloomPassUpsample.Apply();
+                _quadRenderer.RenderQuad(_graphicsDevice, Vector2.One * -1, Vector2.One);
+            }
 
             //Note the final step could be done as a blend to the final texture.
 

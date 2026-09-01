@@ -27,13 +27,21 @@ namespace HiveOnline
         private int _screenHeight = 0;
         private PlayingState _playingState;
         private bool _testing = false;
+        private SimpleAI _ai;
+        private bool _useAI = true; // Set to false to play multiplayer mode
+
+        // Game rule tracking
+        private int _playerTurnCount = 0;  // Light player's turn count
+        private int _opponentTurnCount = 0; // Dark player's turn count
+        private bool _playerQueenPlaced = false;
+        private bool _opponentQueenPlaced = false;
 
         public RunningGameEngine(int screenWidth, int screenHeight, BugTeam team)
         {
             _screenWidth = screenWidth;
             _screenHeight = screenHeight;
             _board = new PlayingBoard(screenWidth, screenHeight);
-
+            _ai = new SimpleAI(_board);
 
             if (team == BugTeam.Light)
                 _playingState = PlayingState.YourTurn;
@@ -70,6 +78,33 @@ namespace HiveOnline
             if (_board.ChatWindow.IsTyping)
             {
                 KeyboardHelper.HandleRunningKeyboard(_board);
+            }
+
+            // Skip game logic if game has ended
+            if (_playingState == PlayingState.Won || _playingState == PlayingState.Lost)
+                return;
+
+            // Handle AI opponent turn
+            if (_useAI && _playingState == PlayingState.OpponentsTurn)
+            {
+                if (_ai.MakeMove(_opponentTurnCount, _opponentQueenPlaced))
+                {
+                    // Check if AI placed a Queen
+                    if (!_opponentQueenPlaced)
+                    {
+                        var darkQueens = _board.Tiles.Values.Where(t => t.Team == BugTeam.Dark && t.Type == BugType.QueenBee).ToList();
+                        if (darkQueens.Count > 0)
+                            _opponentQueenPlaced = true;
+                    }
+
+                    _board.SelectedTile = null;
+                    _board.ClearAvailableTiles();
+                    SwitchTurns();
+                    
+                    // Check if anyone won
+                    CheckWinCondition();
+                }
+                return; // Don't process player input during AI turn
             }
 
             HexPoint originHexPoint = _board.Layout.origin;
@@ -114,6 +149,22 @@ namespace HiveOnline
 
                     if (selectedTile != null)
                     {
+                        bool isNewPlacement = !_board.ContainsTile(selectedTile);
+                        
+                        // Check if Queen must be placed this turn
+                        if (_playerTurnCount >= 3 && !_playerQueenPlaced && 
+                            isNewPlacement && selectedTile.Type != BugType.QueenBee)
+                        {
+                            // Can only place Queen
+                            return;
+                        }
+
+                        // Prevent movement until Queen is placed
+                        if (!isNewPlacement && !CanMoveAnyPiece(BugTeam.Light))
+                        {
+                            return; // Can't move until Queen is placed
+                        }
+
                         //TODO: Figure out a better way to handle pile selections
                         if (_board.ContainsTile(selectedTile))
                             _board.RemoveTile(_board.Tiles[selectedTile.GetHashCode()]);
@@ -124,12 +175,18 @@ namespace HiveOnline
 
                         //Add tile of selected type to available spot
                         _board.AddTile(selectedTile);
+                        
+                        // Track Queen placement
+                        OnPiecePlaced(selectedTile);
 
                         _board.SelectedTile = null;
                         _board.ClearAvailableTiles();
 
                         // Switch to opponent's turn after successful move
                         SwitchTurns();
+                        
+                        // Check if anyone won
+                        CheckWinCondition();
 
                         //reset drag area
                         topMost = default(Hex); bottomMost = default(Hex); leftMost = default(Hex); rightMost = default(Hex);
@@ -214,16 +271,86 @@ namespace HiveOnline
         private void SwitchTurns()
         {
             if (_playingState == PlayingState.YourTurn)
+            {
+                _playerTurnCount++;
                 _playingState = PlayingState.OpponentsTurn;
+            }
             else if (_playingState == PlayingState.OpponentsTurn)
+            {
+                _opponentTurnCount++;
                 _playingState = PlayingState.YourTurn;
+            }
 
             UpdateTurnDisplay();
         }
 
+        private bool CheckWinCondition()
+        {
+            // Check if opponent's Queen is surrounded
+            var opponentQueens = _board.Tiles.Values.Where(t => t.Team == BugTeam.Dark && t.Type == BugType.QueenBee).ToList();
+            if (opponentQueens.Count > 0 && IsQueenSurrounded(opponentQueens[0]))
+            {
+                _playingState = PlayingState.Won;
+                _board.CurrentTurn = "You won! Opponent's Queen is surrounded!";
+                return true;
+            }
+
+            // Check if player's Queen is surrounded
+            var playerQueens = _board.Tiles.Values.Where(t => t.Team == BugTeam.Light && t.Type == BugType.QueenBee).ToList();
+            if (playerQueens.Count > 0 && IsQueenSurrounded(playerQueens[0]))
+            {
+                _playingState = PlayingState.Lost;
+                _board.CurrentTurn = "You lost! Your Queen is surrounded!";
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool IsQueenSurrounded(ITile queen)
+        {
+            // Check if all 6 neighbors contain any pieces (friendly or enemy)
+            for (int i = 0; i < 6; i++)
+            {
+                var neighbor = queen.Location.Neighbor(i);
+                if (!_board.ContainsTile(neighbor))
+                    return false; // Found an empty space, not surrounded
+            }
+            return true; // All 6 neighbors contain pieces
+        }
+
         private void UpdateTurnDisplay()
         {
-            _board.CurrentTurn = _playingState == PlayingState.YourTurn ? "Your Turn" : "Opponent's Turn";
+            string turnText = _playingState == PlayingState.YourTurn ? "Your Turn" : "Opponent's Turn";
+            
+            // Add warnings if Queen must be played
+            if (_playingState == PlayingState.YourTurn && !_playerQueenPlaced && _playerTurnCount >= 3)
+                turnText += " (Queen required!)";
+            else if (_playingState == PlayingState.OpponentsTurn && !_opponentQueenPlaced && _opponentTurnCount >= 3)
+                turnText += " (Queen required!)";
+
+            _board.CurrentTurn = turnText;
+        }
+
+        private bool CanMoveAnyPiece(BugTeam team)
+        {
+            // Can't move pieces until your Queen is placed
+            if (team == BugTeam.Light)
+                return _playerQueenPlaced;
+            else
+                return _opponentQueenPlaced;
+        }
+
+        private void OnPiecePlaced(ITile placedPiece)
+        {
+            // Track if this is a Queen
+            if (placedPiece.Type == BugType.QueenBee)
+            {
+                if (placedPiece.Team == BugTeam.Light)
+                    _playerQueenPlaced = true;
+                else
+                    _opponentQueenPlaced = true;
+            }
         }
 
         private ButtonState _leftButtonPreviousState;
