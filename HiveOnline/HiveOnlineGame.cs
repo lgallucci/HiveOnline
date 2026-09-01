@@ -21,7 +21,7 @@ namespace HiveOnline
 
     class HiveOnlineGame : Game
     {
-        private readonly bool _useLocalAi = true;
+        private readonly GameMode _gameMode;
         private HiveGameClient _hiveClient;
         private string _address = string.Empty;
         private int _port = 60000;
@@ -36,8 +36,9 @@ namespace HiveOnline
         int frameCount = 0;
         TimeSpan frameTimer = new TimeSpan(0);
 
-        public HiveOnlineGame()
+        public HiveOnlineGame(GameMode gameMode = GameMode.LocalAi)
         {
+            _gameMode = gameMode;
             _graphicsEngine = new GraphicsEngine(this);
 
             Content.RootDirectory = "Content";
@@ -82,7 +83,7 @@ namespace HiveOnline
         protected override void LoadContent()
         {
             _gameEngine = new OpeningScreenEngine();
-            if (!_useLocalAi)
+            if (_gameMode == GameMode.Multiplayer)
             {
                 _hiveClient = new HiveGameClient(_address, _port);
             }
@@ -114,13 +115,17 @@ namespace HiveOnline
                 GameState _previousState = _gameState;
                 _gameEngine.Update(ref _gameState);
 
-                if (_useLocalAi && _gameState == GameState.OpeningScreen && _previousState == GameState.OpeningScreen)
+                if (_gameMode != GameMode.Multiplayer && _gameState == GameState.OpeningScreen && _previousState == GameState.OpeningScreen)
                 {
                     _gameState = GameState.Playing;
                 }
 
                 if (_gameState == GameState.Playing && _previousState != GameState.Playing)
-                    _gameEngine = new RunningGameEngine(_screenWidth, _screenHeight, BugTeam.Light, _useLocalAi ? null : _hiveClient);
+                {
+                    var useAi = _gameMode == GameMode.LocalAi;
+                    var networkClient = _gameMode == GameMode.Multiplayer ? _hiveClient : null;
+                    _gameEngine = new RunningGameEngine(_screenWidth, _screenHeight, BugTeam.Light, networkClient, useAi);
+                }
                 if (_gameState == GameState.OpeningScreen && _previousState != GameState.OpeningScreen)
                     _gameEngine = new OpeningScreenEngine();
                 if (_gameState == GameState.ConnectToServer && _previousState != GameState.ConnectToServer)

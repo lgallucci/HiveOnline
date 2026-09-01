@@ -28,7 +28,7 @@ namespace HiveOnline
         private PlayingState _playingState;
         private bool _testing = false;
         private SimpleAI _ai;
-        private bool _useAI = true; // Set to false to play multiplayer mode
+        private readonly bool _useAI;
         private readonly HiveGameClient _networkClient;
         private readonly Queue<string> _pendingNetworkMessages = new Queue<string>();
 
@@ -38,11 +38,12 @@ namespace HiveOnline
         private bool _playerQueenPlaced = false;
         private bool _opponentQueenPlaced = false;
 
-        public RunningGameEngine(int screenWidth, int screenHeight, BugTeam team, HiveGameClient networkClient = null)
+        public RunningGameEngine(int screenWidth, int screenHeight, BugTeam team, HiveGameClient networkClient = null, bool useAi = true)
         {
             _screenWidth = screenWidth;
             _screenHeight = screenHeight;
             _networkClient = networkClient;
+            _useAI = useAi;
             _board = new PlayingBoard(screenWidth, screenHeight);
             _ai = new SimpleAI(_board);
 

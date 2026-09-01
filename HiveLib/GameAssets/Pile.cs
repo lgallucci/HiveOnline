@@ -303,41 +303,53 @@ namespace HiveOnline.GameAssets
         {
             var availableTiles = new List<Hex>();
 
-            if (board.Tiles.Count > 0)
+            if (board.Tiles.Count == 0)
             {
-                // Find placements around tiles of the same team
-                foreach (var tile in board.Tiles.Where(t => t.Value.Team == team))
+                availableTiles.Add(new Hex(0, 0, 0));
+                return availableTiles;
+            }
+
+            var hasTeamTile = board.Tiles.Values.Any(t => t.Team == team);
+            var anchorTiles = hasTeamTile
+                ? board.Tiles.Values.Where(t => t.Team == team).ToList()
+                : board.Tiles.Values.ToList();
+
+            foreach (var tile in anchorTiles)
+            {
+                for (int i = 0; i < 6; i++)
                 {
-                    for (int i = 0; i < 6; i++)
+                    var candidate = tile.Location.Neighbor(i);
+                    if (board.Tiles.ContainsKey(candidate.GetHashCode()) || availableTiles.Contains(candidate))
+                        continue;
+
+                    if (!hasTeamTile)
                     {
-                        if (!board.Tiles.ContainsKey(tile.Value.Location.Neighbor(i).GetHashCode()))
+                        availableTiles.Add(candidate);
+                        continue;
+                    }
+
+                    bool foundOpponentNeighbor = false;
+                    for (int j = 0; j < 6; j++)
+                    {
+                        var neighbor = candidate.Neighbor(j);
+                        if (board.Tiles.ContainsKey(neighbor.GetHashCode()))
                         {
-                            bool _foundOpponent = false;
-                            // Check if any neighboring position has an opponent's piece
-                            for (int j = 0; j < 6; j++)
+                            var neighborTile = board.Tiles[neighbor.GetHashCode()];
+                            if (neighborTile.Team != team)
                             {
-                                if (board.Tiles.ContainsKey(tile.Value.Location.Neighbor(i).Neighbor(j).GetHashCode()))
-                                {
-                                    var neighborTile = board.Tiles[tile.Value.Location.Neighbor(i).Neighbor(j).GetHashCode()];
-                                    if (neighborTile.Team != team)
-                                    {
-                                        _foundOpponent = true;
-                                        break;
-                                    }
-                                }
-                            }
-                            if (!_foundOpponent && !availableTiles.Contains(tile.Value.Location.Neighbor(i)))
-                            {
-                                availableTiles.Add(tile.Value.Location.Neighbor(i));
+                                foundOpponentNeighbor = true;
+                                break;
                             }
                         }
                     }
+
+                    if (!foundOpponentNeighbor)
+                    {
+                        availableTiles.Add(candidate);
+                    }
                 }
             }
-            else
-            {
-                availableTiles.Add(new Hex(0, 0, 0));
-            }
+
             return availableTiles;
         }
 
