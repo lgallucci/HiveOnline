@@ -22,6 +22,7 @@ namespace HiveOnline.GameAssets
         public Pile UserPile { get; set; }
         public string OpponentName { get; set; } = "TestOpponent";
         public Pile OpponentPile { get; set; }
+        public string CurrentTurn { get; set; } = "Your Turn";
 
         public BoardGraphics Graphics { get; set; } = new BoardGraphics();
         public Dictionary<int, Hex> TestSpots { get; set; } = new Dictionary<int, Hex>();
@@ -37,7 +38,7 @@ namespace HiveOnline.GameAssets
 
         public void Draw()
         {
-            Graphics.Draw(UserName, OpponentName);
+            Graphics.Draw(UserName, OpponentName, CurrentTurn);
 
             //Draw Grid
             foreach (var tile in Tiles.OrderBy(kvp => kvp.Value.Type))

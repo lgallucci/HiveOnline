@@ -40,6 +40,8 @@ namespace HiveOnline
             else
                 _playingState = PlayingState.OpponentsTurn;
 
+            UpdateTurnDisplay();
+
             if (_testing)
                 //foreach (var testTile in TestBoard.GetTestBoard())
                 foreach (var testTile in TestBoard.GetSpiderAntTestBoard())
@@ -80,7 +82,7 @@ namespace HiveOnline
             //Enter Layout
             if (_board.UserPile.Intersects(mouseState.X, mouseState.Y))
             {
-                if (MouseLeftClickedOnce(mouseState.LeftButton))
+                if (MouseLeftClickedOnce(mouseState.LeftButton) && _playingState == PlayingState.YourTurn)
                 {
                     _board.SelectedTile = null;
                     _board.ClearAvailableTiles();
@@ -125,6 +127,9 @@ namespace HiveOnline
 
                         _board.SelectedTile = null;
                         _board.ClearAvailableTiles();
+
+                        // Switch to opponent's turn after successful move
+                        SwitchTurns();
 
                         //reset drag area
                         topMost = default(Hex); bottomMost = default(Hex); leftMost = default(Hex); rightMost = default(Hex);
@@ -204,6 +209,21 @@ namespace HiveOnline
 
 
             //TODO: Update game state
+        }
+
+        private void SwitchTurns()
+        {
+            if (_playingState == PlayingState.YourTurn)
+                _playingState = PlayingState.OpponentsTurn;
+            else if (_playingState == PlayingState.OpponentsTurn)
+                _playingState = PlayingState.YourTurn;
+
+            UpdateTurnDisplay();
+        }
+
+        private void UpdateTurnDisplay()
+        {
+            _board.CurrentTurn = _playingState == PlayingState.YourTurn ? "Your Turn" : "Opponent's Turn";
         }
 
         private ButtonState _leftButtonPreviousState;

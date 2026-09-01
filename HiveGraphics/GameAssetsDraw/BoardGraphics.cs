@@ -6,14 +6,23 @@ using System.Collections.Generic;
 namespace HiveGraphics.GameAssetsDraw;
 public class BoardGraphics : DrawableObject
 {
-    public void Draw(string userName, string opponentName)
+    public void Draw(string userName, string opponentName, string currentTurn = "")
     {
         var userNameSize = Art.NameFont.MeasureString(userName);
         var opponentNameSize = Art.NameFont.MeasureString(opponentName);
+        var turnSize = Art.NameFont.MeasureString(currentTurn);
+        
         GraphicsEngine.SpriteBatch.DrawString(Art.NameFont, userName, 
             new Vector2(5, /*window height - font height*/(float)Height - userNameSize.Y - 75), Color.CornflowerBlue);
         GraphicsEngine.SpriteBatch.DrawString(Art.NameFont, opponentName, 
             new Vector2(/*window width - font width*/(float)Width - opponentNameSize.X - 5, 75), Color.Red);
+        
+        // Display current turn in the center top
+        if (!string.IsNullOrEmpty(currentTurn))
+        {
+            GraphicsEngine.SpriteBatch.DrawString(Art.NameFont, currentTurn,
+                new Vector2((float)Width / 2 - turnSize.X / 2, 10), Color.Yellow);
+        }
     }
 
     public void DrawHexagon(Layout layout, Hex location, int colorR, int colorG, int colorB)
