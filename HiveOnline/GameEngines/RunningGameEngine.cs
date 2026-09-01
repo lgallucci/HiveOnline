@@ -98,9 +98,44 @@ namespace HiveOnline
                 KeyboardHelper.HandleRunningKeyboard(_board);
             }
 
-            // Skip game logic if game has ended
+            HexPoint originHexPoint = _board.Layout.origin;
+            HexPoint originalSize = _board.Layout.size;
+
+            var mouseState = Mouse.GetState();
+            var fractionalHex = _board.Layout.PixelToHex(new HexPoint(mouseState.X, mouseState.Y));
+            var clickedHex = fractionalHex.HexRound();
+
+            // Allow camera movement after the game ends, but block all piece interaction.
             if (_playingState == PlayingState.Won || _playingState == PlayingState.Lost)
+            {
+                if (mouseState.LeftButton == ButtonState.Pressed)
+                {
+                    if (mouseState.X > 0 && mouseState.Y > 0 && mouseState.X < _board.Graphics.Width && mouseState.Y < _board.Graphics.Height)
+                    {
+                        Mouse.SetCursor(MouseCursor.Crosshair);
+                        draggingCamera = true;
+                        if (lastDragPosition == default(HexPoint))
+                            lastDragPosition = new HexPoint(mouseState.X, mouseState.Y);
+
+                        originHexPoint = HandleCameraDrag(_board, mouseState);
+                        lastDragPosition = new HexPoint(mouseState.X, mouseState.Y);
+                    }
+                }
+                else
+                {
+                    Mouse.SetCursor(MouseCursor.Arrow);
+                    lastDragPosition = default(HexPoint);
+                    draggingCamera = false;
+                }
+
+                if (mouseState.ScrollWheelValue != lastScrollWheelValue)
+                {
+                    originalSize = HandleCameraResize(_board, mouseState);
+                }
+
+                _board.Layout = new Layout(Layout.flat, originalSize, originHexPoint);
                 return;
+            }
 
             // Handle AI opponent turn
             if (_useAI && _playingState == PlayingState.OpponentsTurn)
@@ -124,13 +159,6 @@ namespace HiveOnline
                 }
                 return; // Don't process player input during AI turn
             }
-
-            HexPoint originHexPoint = _board.Layout.origin;
-            HexPoint originalSize = _board.Layout.size;
-
-            var mouseState = Mouse.GetState();
-            var fractionalHex = _board.Layout.PixelToHex(new HexPoint(mouseState.X, mouseState.Y));
-            var clickedHex = fractionalHex.HexRound();
 
             //Enter Layout
             if (_board.UserPile.Intersects(mouseState.X, mouseState.Y))
