@@ -1,10 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
     <ApplicationIcon>Icon.ico</ApplicationIcon>
-    <MonoGamePlatform>Windows</MonoGamePlatform>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,7 +23,6 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>link</TrimMode>
     <SuppressTrimAnalysisWarnings>false</SuppressTrimAnalysisWarnings>
