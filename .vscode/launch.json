@@ -1,7 +1,15 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": []
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "C#: Launch Startup Project",
+      "type": "dotnet",
+      "request": "launch",
+      "projectPath": "${workspaceFolder}/HiveOnline/HiveOnline.csproj",
+      "launchSettingsFile": "${workspaceFolder}/HiveOnline/Properties/launchSettings.json",
+      "cwd": "${workspaceFolder}/HiveOnline",
+      "console": "internalConsole",
+      "justMyCode": true
+    }
+  ]
 }

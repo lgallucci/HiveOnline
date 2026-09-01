@@ -87,6 +87,7 @@ namespace HiveLib
         private EffectParameter _bloomStreakLengthParameter;
         private EffectParameter _bloomThresholdParameter;
 
+#pragma warning disable CS0414
         //Preset variables for different mip levels
         private float _bloomRadius1 = 1.0f;
         private float _bloomRadius2 = 1.0f;
@@ -99,6 +100,7 @@ namespace HiveLib
         private float _bloomStrength3 = 1.0f;
         private float _bloomStrength4 = 1.0f;
         private float _bloomStrength5 = 1.0f;
+#pragma warning restore CS0414
 
         public float BloomStrengthMultiplier = 1.0f;
 
