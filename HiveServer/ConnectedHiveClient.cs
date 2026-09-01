@@ -9,10 +9,13 @@ namespace HiveServer
     internal class ConnectedHiveClient
     {
         public Action<ConnectedHiveClient, bool> Disconnected;
+        public Func<ConnectedHiveClient, string, Task> MessageReceived;
 
-        private AsyncTcpClient tcpClient;
+        private readonly AsyncTcpClient tcpClient;
 
-        public Guid Identifier { get; internal set; }
+        public Guid Identifier { get; }
+
+        public string RemoteEndpoint => tcpClient?.ServerTcpClient?.Client?.RemoteEndPoint?.ToString() ?? "unknown";
 
         public ConnectedHiveClient(TcpClient tcpClient)
         {
@@ -21,30 +24,33 @@ namespace HiveServer
             {
                 ServerTcpClient = tcpClient,
                 ConnectedCallback = ClientConnected,
-                ReceivedCallback = MessageRecieved,
+                ReceivedCallback = MessageReceivedAsync,
                 ClosedCallback = ClientClosed
             };
         }
 
         private async Task ClientConnected(AsyncTcpClient client, bool isReconnected)
         {
-            await Task.Delay(500);
-            byte[] bytes = Encoding.UTF8.GetBytes($"Hello, {client.ServerTcpClient.Client.RemoteEndPoint}, my name is Server. Talk to me.");
-            await client.Send(new ArraySegment<byte>(bytes, 0, bytes.Length));
+            await SendMessage($"WELCOME {Identifier}");
         }
 
-        private async Task MessageRecieved(AsyncTcpClient client, int count)
+        private async Task MessageReceivedAsync(AsyncTcpClient client, int count)
         {
-            byte[] bytes = client.ByteBuffer.Dequeue(count);
-            string message = Encoding.UTF8.GetString(bytes, 0, bytes.Length);
+            var bytes = client.ByteBuffer.Dequeue(count);
+            var message = Encoding.UTF8.GetString(bytes, 0, bytes.Length).Trim();
+
+            if (string.IsNullOrWhiteSpace(message))
+                return;
+
             Console.WriteLine($"Server client {Identifier}: received: {message}");
 
-            bytes = Encoding.UTF8.GetBytes("You said: " + message);
-            await client.Send(new ArraySegment<byte>(bytes, 0, bytes.Length));
-
-            if (message == "bye")
+            if (MessageReceived != null)
             {
-                // Let the server close the connection
+                await MessageReceived(this, message);
+            }
+
+            if (message.Equals("bye", StringComparison.OrdinalIgnoreCase))
+            {
                 client.Disconnect();
             }
         }
@@ -54,9 +60,23 @@ namespace HiveServer
             Disconnected?.Invoke(this, remote);
         }
 
+        public async Task SendMessage(string message)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+                return;
+
+            var bytes = Encoding.UTF8.GetBytes(message + "\n");
+            await tcpClient.Send(new ArraySegment<byte>(bytes, 0, bytes.Length));
+        }
+
         public Task RunAsync()
         {
             return tcpClient.RunAsync();
+        }
+
+        public void Disconnect()
+        {
+            tcpClient.Disconnect();
         }
     }
 }

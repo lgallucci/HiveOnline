@@ -1,12 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Library</OutputType>
+    <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
-	<ServerGarbageCollection>true</ServerGarbageCollection>
-	<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-	<ContainerBaseImage>mcr.microsoft.com/dotnet/runtime:10.0</ContainerBaseImage>
-	<ContainerImageName>HiveServer</ContainerImageName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <ContainerBaseImage>mcr.microsoft.com/dotnet/runtime:10.0</ContainerBaseImage>
+    <ContainerImageName>HiveServer</ContainerImageName>
   </PropertyGroup>
 
   <ItemGroup>
