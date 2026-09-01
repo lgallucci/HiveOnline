@@ -86,7 +86,9 @@ namespace HiveOnline
                         var available = piece.Value.CalculateAvailable(_board);
                         if (available.Count > 0)
                         {
-                            var moveLocation = available[_random.Next(available.Count)];
+                            var moveLocation = available
+                                .OrderByDescending(destination => ScoreMoveDestination(piece.Value, destination, BugTeam.Dark))
+                                .First();
                             ExecuteMove(piece.Value, moveLocation);
                             return true;
                         }
@@ -132,17 +134,125 @@ namespace HiveOnline
         private int ScorePlacement(Hex position, BugTeam team)
         {
             var score = 0;
+            var friendlyNeighbors = 0;
+            var enemyNeighbors = 0;
 
             foreach (var neighbor in Enumerable.Range(0, 6).Select(i => position.Neighbor(i)))
             {
                 if (_board.Tiles.TryGetValue(neighbor.GetHashCode(), out var tile))
                 {
-                    score += tile.Team == team ? 4 : -2;
+                    if (tile.Team == team)
+                    {
+                        friendlyNeighbors++;
+                        score += 12;
+                    }
+                    else
+                    {
+                        enemyNeighbors++;
+                        score -= 6;
+                    }
                 }
             }
 
+            if (friendlyNeighbors >= 2)
+                score += 10;
+
+            if (friendlyNeighbors == 0 && _board.Tiles.Count > 0)
+                score -= 4;
+
+            if (enemyNeighbors > 0)
+                score += 3;
+
+            if (_board.Tiles.Values.Any(t => t.Team == team))
+            {
+                score += Enumerable.Range(0, 6)
+                    .Count(i => _board.Tiles.ContainsKey(position.Neighbor(i).GetHashCode())) * 5;
+            }
+            else if (_board.Tiles.Count > 0)
+            {
+                score += Enumerable.Range(0, 6)
+                    .Count(i => _board.Tiles.ContainsKey(position.Neighbor(i).GetHashCode())) * 4;
+            }
+
             var centerDistance = Math.Abs(position.q) + Math.Abs(position.r) + Math.Abs(position.s);
-            score += Math.Max(0, 3 - centerDistance);
+            score += Math.Max(0, 4 - centerDistance) * 2;
+
+            return score;
+        }
+
+        private int ScoreMoveDestination(ITile piece, Hex destination, BugTeam team)
+        {
+            var score = 0;
+            var friendlyNeighbors = 0;
+            var enemyNeighbors = 0;
+
+            var originalLocation = piece.Location;
+            var originalTile = _board.Tiles.ContainsKey(originalLocation.GetHashCode()) ? _board.Tiles[originalLocation.GetHashCode()] : null;
+
+            if (originalTile != null && originalLocation != destination)
+            {
+                _board.RemoveTile(originalTile);
+            }
+
+            piece.Location = destination;
+            if (_board.Tiles.ContainsKey(destination.GetHashCode()))
+            {
+                var existing = _board.Tiles[destination.GetHashCode()];
+                if (existing != piece)
+                {
+                    _board.RemoveTile(existing);
+                }
+            }
+
+            _board.AddTile(piece);
+
+            foreach (var neighbor in Enumerable.Range(0, 6).Select(i => destination.Neighbor(i)))
+            {
+                if (_board.Tiles.TryGetValue(neighbor.GetHashCode(), out var neighborTile))
+                {
+                    if (neighborTile.Team == team)
+                    {
+                        friendlyNeighbors++;
+                        score += 12;
+                    }
+                    else
+                    {
+                        enemyNeighbors++;
+                        score += 3;
+                    }
+                }
+            }
+
+            if (friendlyNeighbors >= 2)
+                score += 20;
+
+            if (enemyNeighbors > 0)
+                score += 6;
+
+            var queen = _board.Tiles.Values.FirstOrDefault(t => t.Team != team && t.Type == BugType.QueenBee);
+            if (queen != null)
+            {
+                var queenDistance = Math.Abs(destination.q - queen.Location.q) +
+                                    Math.Abs(destination.r - queen.Location.r) +
+                                    Math.Abs(destination.s - queen.Location.s);
+                if (queenDistance <= 2)
+                    score += 18;
+            }
+
+            var centerDistance = Math.Abs(destination.q) + Math.Abs(destination.r) + Math.Abs(destination.s);
+            score += Math.Max(0, 5 - centerDistance) * 2;
+
+            if (originalTile != null)
+            {
+                _board.RemoveTile(piece);
+                piece.Location = originalLocation;
+                _board.AddTile(originalTile);
+            }
+            else
+            {
+                _board.RemoveTile(piece);
+                piece.Location = originalLocation;
+            }
 
             return score;
         }
