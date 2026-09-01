@@ -29,6 +29,8 @@ namespace HiveOnline
         private bool _testing = false;
         private SimpleAI _ai;
         private bool _useAI = true; // Set to false to play multiplayer mode
+        private readonly HiveGameClient _networkClient;
+        private readonly Queue<string> _pendingNetworkMessages = new Queue<string>();
 
         // Game rule tracking
         private int _playerTurnCount = 0;  // Light player's turn count
@@ -36,12 +38,22 @@ namespace HiveOnline
         private bool _playerQueenPlaced = false;
         private bool _opponentQueenPlaced = false;
 
-        public RunningGameEngine(int screenWidth, int screenHeight, BugTeam team)
+        public RunningGameEngine(int screenWidth, int screenHeight, BugTeam team, HiveGameClient networkClient = null)
         {
             _screenWidth = screenWidth;
             _screenHeight = screenHeight;
+            _networkClient = networkClient;
             _board = new PlayingBoard(screenWidth, screenHeight);
             _ai = new SimpleAI(_board);
+
+            if (_networkClient != null)
+            {
+                _networkClient.MessageReceived += message =>
+                {
+                    if (!string.IsNullOrWhiteSpace(message))
+                        _pendingNetworkMessages.Enqueue(message);
+                };
+            }
 
             if (team == BugTeam.Light)
                 _playingState = PlayingState.YourTurn;
@@ -75,6 +87,11 @@ namespace HiveOnline
         private Hex leftMost, rightMost, topMost, bottomMost;
         public override void Update(ref GameState _gameState)
         {
+            while (_networkClient != null && _networkClient.IsConnected && _networkClient.TryDequeueMessage(out var message))
+            {
+                ProcessIncomingNetworkMessage(message);
+            }
+
             if (_board.ChatWindow.IsTyping)
             {
                 KeyboardHelper.HandleRunningKeyboard(_board);
@@ -166,12 +183,14 @@ namespace HiveOnline
                         }
 
                         //TODO: Figure out a better way to handle pile selections
+                        Hex fromHex = selectedTile.Location;
                         if (_board.ContainsTile(selectedTile))
                             _board.RemoveTile(_board.Tiles[selectedTile.GetHashCode()]);
                         else
                             selectedTile = _board.UserPile.GetTile(selectedTile.Type);
 
-                        selectedTile.Location = _board.AvailableTiles[clickedHex.GetHashCode()];
+                        var destinationHex = _board.AvailableTiles[clickedHex.GetHashCode()];
+                        selectedTile.Location = destinationHex;
 
                         //Add tile of selected type to available spot
                         _board.AddTile(selectedTile);
@@ -181,6 +200,11 @@ namespace HiveOnline
 
                         _board.SelectedTile = null;
                         _board.ClearAvailableTiles();
+
+                        if (_networkClient != null && _networkClient.IsConnected)
+                        {
+                            _ = _networkClient.SendMove(selectedTile.Type.ToString(), fromHex.q, fromHex.r, fromHex.s, destinationHex.q, destinationHex.r, destinationHex.s, selectedTile.Team.ToString());
+                        }
 
                         // Switch to opponent's turn after successful move
                         SwitchTurns();
@@ -266,6 +290,82 @@ namespace HiveOnline
 
 
             //TODO: Update game state
+        }
+
+        private void ProcessIncomingNetworkMessage(string message)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+                return;
+
+            if (!message.StartsWith("MOVE|", StringComparison.OrdinalIgnoreCase))
+                return;
+
+            var parts = message.Split('|');
+            if (parts.Length < 5)
+                return;
+
+            try
+            {
+                var teamValue = parts[1];
+                var typeValue = parts[2];
+                var fromCoords = parts[3].Split(',');
+                var toCoords = parts[4].Split(',');
+
+                if (fromCoords.Length != 3 || toCoords.Length != 3)
+                    return;
+
+                var team = Enum.TryParse<BugTeam>(teamValue, true, out var parsedTeam) ? parsedTeam : BugTeam.Blank;
+                var type = Enum.TryParse<BugType>(typeValue, true, out var parsedType) ? parsedType : BugType.QueenBee;
+
+                var fromHex = new Hex(int.Parse(fromCoords[0]), int.Parse(fromCoords[1]), int.Parse(fromCoords[2]));
+                var toHex = new Hex(int.Parse(toCoords[0]), int.Parse(toCoords[1]), int.Parse(toCoords[2]));
+
+                var remoteTile = GetTileForRemoteMove(team, type, fromHex, toHex);
+                if (remoteTile == null)
+                    return;
+
+                remoteTile.Location = toHex;
+
+                if (_board.ContainsTile(toHex))
+                {
+                    _board.RemoveTile(_board.Tiles[toHex.GetHashCode()]);
+                }
+
+                _board.AddTile(remoteTile);
+
+                if (team == BugTeam.Dark)
+                {
+                    _opponentTurnCount++;
+                    _playingState = PlayingState.YourTurn;
+                    UpdateTurnDisplay();
+                }
+            }
+            catch
+            {
+                // Ignore malformed network move payloads instead of crashing the game.
+            }
+        }
+
+        private ITile GetTileForRemoteMove(BugTeam team, BugType bugType, Hex fromHex, Hex toHex)
+        {
+            if (_board.ContainsTile(fromHex))
+            {
+                var existing = _board.Tiles[fromHex.GetHashCode()];
+                if (existing.Team == team && existing.Type == bugType)
+                    return existing;
+            }
+
+            if (team == BugTeam.Light)
+            {
+                return _board.UserPile.GetTile(bugType);
+            }
+
+            if (team == BugTeam.Dark)
+            {
+                return _board.OpponentPile.GetTile(bugType);
+            }
+
+            return null;
         }
 
         private void SwitchTurns()

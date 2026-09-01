@@ -61,6 +61,12 @@ namespace HiveServer
             if (string.IsNullOrWhiteSpace(normalized))
                 return;
 
+            if (normalized.StartsWith("MOVE|", StringComparison.OrdinalIgnoreCase))
+            {
+                await RouteMove(client, normalized);
+                return;
+            }
+
             switch (normalized.ToUpperInvariant())
             {
                 case "HELLO":
@@ -104,6 +110,9 @@ namespace HiveServer
             }
 
             var game = new HiveGame(playerOne, playerTwo);
+            playerOne.CurrentGame = game;
+            playerTwo.CurrentGame = game;
+
             lock (_syncRoot)
             {
                 _games.Add(game);
@@ -115,6 +124,18 @@ namespace HiveServer
             await playerTwo.SendMessage("YOU_ARE_PLAYER_2");
 
             Console.WriteLine($"Matched players in game {game.Id}");
+        }
+
+        private async Task RouteMove(ConnectedHiveClient client, string message)
+        {
+            if (client.CurrentGame == null)
+            {
+                await client.SendMessage("ERROR NOT_IN_GAME");
+                return;
+            }
+
+            var opponent = client.CurrentGame.GetOpponent(client);
+            await opponent.SendMessage(message);
         }
 
         private void ClientClosed(ConnectedHiveClient tcpClient, bool closedByRemote)

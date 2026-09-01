@@ -21,6 +21,7 @@ namespace HiveOnline
 
     class HiveOnlineGame : Game
     {
+        private readonly bool _useLocalAi = true;
         private HiveGameClient _hiveClient;
         private string _address = string.Empty;
         private int _port = 60000;
@@ -81,7 +82,10 @@ namespace HiveOnline
         protected override void LoadContent()
         {
             _gameEngine = new OpeningScreenEngine();
-            _hiveClient = new HiveGameClient(_address, _port);
+            if (!_useLocalAi)
+            {
+                _hiveClient = new HiveGameClient(_address, _port);
+            }
             SetWindowSize();
             _graphicsEngine.Load(GraphicsDevice, Content);
         }
@@ -110,8 +114,13 @@ namespace HiveOnline
                 GameState _previousState = _gameState;
                 _gameEngine.Update(ref _gameState);
 
+                if (_useLocalAi && _gameState == GameState.OpeningScreen && _previousState == GameState.OpeningScreen)
+                {
+                    _gameState = GameState.Playing;
+                }
+
                 if (_gameState == GameState.Playing && _previousState != GameState.Playing)
-                    _gameEngine = new RunningGameEngine(_screenWidth, _screenHeight, BugTeam.Light);
+                    _gameEngine = new RunningGameEngine(_screenWidth, _screenHeight, BugTeam.Light, _useLocalAi ? null : _hiveClient);
                 if (_gameState == GameState.OpeningScreen && _previousState != GameState.OpeningScreen)
                     _gameEngine = new OpeningScreenEngine();
                 if (_gameState == GameState.ConnectToServer && _previousState != GameState.ConnectToServer)

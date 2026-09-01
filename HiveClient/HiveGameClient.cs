@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -11,6 +12,7 @@ namespace HiveClient
     {
         private readonly string _address;
         private readonly int _port;
+        private readonly Queue<string> _receivedMessages = new Queue<string>();
         private AsyncTcpClient _tcpClient;
         private bool disposedValue;
 
@@ -45,10 +47,33 @@ namespace HiveClient
             var buffer = client.ByteBuffer.Dequeue(length);
             var message = Encoding.UTF8.GetString(buffer, 0, length).Trim();
 
+            if (!string.IsNullOrWhiteSpace(message))
+            {
+                lock (_receivedMessages)
+                {
+                    _receivedMessages.Enqueue(message);
+                }
+            }
+
             Console.WriteLine($"Client Received: {message}");
             MessageReceived?.Invoke(message);
 
             return Task.CompletedTask;
+        }
+
+        public bool TryDequeueMessage(out string message)
+        {
+            lock (_receivedMessages)
+            {
+                if (_receivedMessages.Count > 0)
+                {
+                    message = _receivedMessages.Dequeue();
+                    return true;
+                }
+            }
+
+            message = string.Empty;
+            return false;
         }
 
         private async Task ClientConnected(AsyncTcpClient client, bool isReconnect)
@@ -64,6 +89,12 @@ namespace HiveClient
 
             var bytes = Encoding.UTF8.GetBytes(message + "\n");
             await _tcpClient.Send(new ArraySegment<byte>(bytes, 0, bytes.Length));
+        }
+
+        public async Task SendMove(string pieceType, int fromQ, int fromR, int fromS, int toQ, int toR, int toS, string team = "LIGHT")
+        {
+            var payload = $"MOVE|{team}|{pieceType}|{fromQ},{fromR},{fromS}|{toQ},{toR},{toS}";
+            await SendMessage(payload);
         }
 
         public async Task JoinGame() => await SendMessage("JOIN");

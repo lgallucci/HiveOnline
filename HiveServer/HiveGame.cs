@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace HiveServer
 {
@@ -17,5 +18,21 @@ namespace HiveServer
         }
 
         public IReadOnlyCollection<ConnectedHiveClient> Players => new[] { PlayerOne, PlayerTwo };
+
+        public ConnectedHiveClient GetOpponent(ConnectedHiveClient client)
+        {
+            if (ReferenceEquals(client, PlayerOne))
+                return PlayerTwo;
+
+            if (ReferenceEquals(client, PlayerTwo))
+                return PlayerOne;
+
+            throw new InvalidOperationException("Client is not a member of this game.");
+        }
+
+        public bool Contains(ConnectedHiveClient client)
+        {
+            return ReferenceEquals(client, PlayerOne) || ReferenceEquals(client, PlayerTwo);
+        }
     }
 }
