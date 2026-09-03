@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\HiveClient\HiveClient.csproj" />
+    <ProjectReference Include="..\HiveLib\HiveLib.csproj" />
   </ItemGroup>
 
 </Project>

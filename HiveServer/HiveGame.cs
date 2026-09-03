@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using HiveContracts;
+using HiveLib.Rules;
 
 namespace HiveServer
 {
@@ -10,6 +12,7 @@ namespace HiveServer
 
         public ConnectedHiveClient PlayerOne { get; }
         public ConnectedHiveClient PlayerTwo { get; }
+        public HiveGameState State { get; } = new HiveGameState();
 
         public HiveGame(ConnectedHiveClient playerOne, ConnectedHiveClient playerTwo)
         {
@@ -33,6 +36,15 @@ namespace HiveServer
         public bool Contains(ConnectedHiveClient client)
         {
             return ReferenceEquals(client, PlayerOne) || ReferenceEquals(client, PlayerTwo);
+        }
+
+        public BugTeam GetTeam(ConnectedHiveClient client)
+        {
+            if (ReferenceEquals(client, PlayerOne))
+                return BugTeam.Light;
+            if (ReferenceEquals(client, PlayerTwo))
+                return BugTeam.Dark;
+            throw new InvalidOperationException("Client is not a member of this game.");
         }
     }
 }

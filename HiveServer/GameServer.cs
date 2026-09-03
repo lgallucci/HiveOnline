@@ -6,6 +6,8 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Unclassified.Net;
+using HiveContracts;
+using HiveLib.Rules;
 
 namespace HiveServer
 {
@@ -137,11 +139,18 @@ namespace HiveServer
         private async Task RouteMove(ConnectedHiveClient client, string message)
         {
             ConnectedHiveClient opponent = null;
+            MoveResult result = null;
             lock (_syncRoot)
             {
                 var game = client.CurrentGame;
                 if (game != null)
+                {
                     opponent = game.GetOpponent(client);
+                    if (TryParseMove(message, game.GetTeam(client), out var move))
+                        result = game.State.TryApplyMove(move);
+                    else
+                        result = MoveResult.Rejected("INVALID_MOVE_FORMAT");
+                }
             }
 
             if (opponent == null)
@@ -150,7 +159,39 @@ namespace HiveServer
                 return;
             }
 
+            if (!result.IsValid)
+            {
+                await client.SendMessage($"MOVE_REJECTED {result.ErrorCode}");
+                return;
+            }
+
             await opponent.SendMessage(message);
+        }
+
+        private static bool TryParseMove(string message, BugTeam senderTeam, out HiveMove move)
+        {
+            move = default;
+            var parts = message.Split('|');
+            if (parts.Length != 5 || !parts[0].Equals("MOVE", StringComparison.OrdinalIgnoreCase) ||
+                !Enum.TryParse(parts[2], true, out BugType bugType) ||
+                !TryParseHex(parts[3], out var from) || !TryParseHex(parts[4], out var to))
+                return false;
+
+            move = new HiveMove(senderTeam, bugType, from, to);
+            return true;
+        }
+
+        private static bool TryParseHex(string value, out Hex hex)
+        {
+            hex = default;
+            var coordinates = value.Split(',');
+            if (coordinates.Length != 3 || !int.TryParse(coordinates[0], out var q) ||
+                !int.TryParse(coordinates[1], out var r) || !int.TryParse(coordinates[2], out var s) ||
+                q + r + s != 0)
+                return false;
+
+            hex = new Hex(q, r, s);
+            return true;
         }
 
         private void ClientClosed(ConnectedHiveClient tcpClient, bool closedByRemote)

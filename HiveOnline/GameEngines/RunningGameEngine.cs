@@ -3,6 +3,7 @@ using HiveContracts;
 using HiveGraphics;
 using HiveLib.Bugs;
 using HiveLib.GameAssets;
+using HiveLib.Rules;
 using HiveOnline.GameAssets;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
@@ -33,6 +34,7 @@ namespace HiveOnline
         private SimpleAI _ai;
         private readonly BoardViewState _view;
         private readonly BoardRenderer _boardRenderer;
+        private readonly HiveGameState _rules;
         private readonly bool _useAI;
         private readonly HiveGameClient _networkClient;
         private readonly ConcurrentQueue<string> _pendingNetworkMessages = new ConcurrentQueue<string>();
@@ -52,6 +54,7 @@ namespace HiveOnline
             _useAI = useAi;
             _playerTeam = team;
             _board = new PlayingBoard();
+            _rules = new HiveGameState(_board, team);
             _view = new BoardViewState(screenWidth, screenHeight);
             _boardRenderer = new BoardRenderer();
             _boardRenderer.Resize(_view, _board);
@@ -183,8 +186,11 @@ namespace HiveOnline
                             if (_networkClient != null && _networkClient.IsConnected)
                                 _ = _networkClient.SendMove(appliedTile.Type.ToString(), fromHex.q, fromHex.r, fromHex.s, destinationHex.q, destinationHex.r, destinationHex.s, appliedTile.Team.ToString());
 
-                            SwitchTurns();
-                            CheckWinCondition();
+                            if (_useAI)
+                            {
+                                SwitchTurns();
+                                CheckWinCondition();
+                            }
 
                             topMost = default(Hex); bottomMost = default(Hex); leftMost = default(Hex); rightMost = default(Hex);
                             foreach (var hex in _board.Tiles.Select(t => t.Value))
@@ -346,6 +352,9 @@ namespace HiveOnline
 
         private bool MustPlayQueen(ITile tile)
         {
+            if (!_useAI)
+                return _rules.GetTurnCount(_playerTeam) >= 3 && !_rules.IsQueenPlaced(_playerTeam) && tile.Type != BugType.QueenBee;
+
             // Check if Queen must be placed this turn
             if (_playerTurnCount >= 3 && !_playerQueenPlaced && 
                 tile.Type != BugType.QueenBee)
@@ -432,6 +441,13 @@ namespace HiveOnline
         private bool TryApplyMove(ITile requestedTile, Hex from, Hex destination,
             BugTeam team, out ITile appliedTile)
         {
+            if (!_useAI)
+            {
+                var result = _rules.TryApplyMove(new HiveMove(team, requestedTile.Type, from, destination));
+                appliedTile = result.IsValid ? _board.Tiles[destination.GetHashCode()] : null;
+                return result.IsValid;
+            }
+
             appliedTile = null;
             if (requestedTile == null || requestedTile.Team != team)
                 return false;
