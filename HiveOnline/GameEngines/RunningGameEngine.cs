@@ -7,6 +7,7 @@ using HiveOnline.GameAssets;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Drawing;
@@ -34,7 +35,7 @@ namespace HiveOnline
         private readonly BoardRenderer _boardRenderer;
         private readonly bool _useAI;
         private readonly HiveGameClient _networkClient;
-        private readonly Queue<string> _pendingNetworkMessages = new Queue<string>();
+        private readonly ConcurrentQueue<string> _pendingNetworkMessages = new ConcurrentQueue<string>();
         private BugTeam _playerTeam;
 
         // Game rule tracking
@@ -92,7 +93,7 @@ namespace HiveOnline
 
         public override void Draw(HiveGraphics.GraphicsEngine _graphicsEngine)
         {
-            _boardRenderer.Draw(_board, _view);
+            _boardRenderer.Draw(_board, _view, _graphicsEngine.Context);
         }
 
         private Hex leftMost, rightMost, topMost, bottomMost;
@@ -108,7 +109,7 @@ namespace HiveOnline
 
             if (_board.ChatWindow.IsTyping)
             {
-                KeyboardHelper.HandleRunningKeyboard(_board);
+                ApplyChatInput(KeyboardHelper.ReadChatInput());
             }
 
             HexPoint originHexPoint = _view.Layout.origin;
@@ -175,62 +176,24 @@ namespace HiveOnline
 
                     if (selectedTile != null)
                     {
-                        bool isNewPlacement = !_board.ContainsTile(selectedTile);
-
-                        if (isNewPlacement && MustPlayQueen(selectedTile))
-                        {
-                            // Can only place Queen
-                            return;
-                        }
-
-                        // Prevent movement until Queen is placed
-                        if (!isNewPlacement && !CanMoveAnyPiece(BugTeam.Light))
-                        {
-                            return; // Can't move until Queen is placed
-                        }
-
-                        //TODO: Figure out a better way to handle pile selections
-                        Hex fromHex = selectedTile.Location;
-                        if (_board.ContainsTile(selectedTile))
-                            _board.RemoveTile(_board.Tiles[selectedTile.GetHashCode()]);
-                        else
-                            selectedTile = _board.UserPile.GetTile(selectedTile.Type);
-
+                        var fromHex = selectedTile.Location;
                         var destinationHex = _board.AvailableTiles[clickedHex.GetHashCode()];
-                        selectedTile.Location = destinationHex;
-
-                        //Add tile of selected type to available spot
-                        _board.AddTile(selectedTile);
-                        
-                        // Track Queen placement
-                        OnPiecePlaced(selectedTile);
-
-                        _board.SelectedTile = null;
-                        _board.ClearAvailableTiles();
-
-                        if (_networkClient != null && _networkClient.IsConnected)
+                        if (TryApplyMove(selectedTile, fromHex, destinationHex, _playerTeam, out var appliedTile))
                         {
-                            _ = _networkClient.SendMove(selectedTile.Type.ToString(), fromHex.q, fromHex.r, fromHex.s, destinationHex.q, destinationHex.r, destinationHex.s, selectedTile.Team.ToString());
-                        }
+                            if (_networkClient != null && _networkClient.IsConnected)
+                                _ = _networkClient.SendMove(appliedTile.Type.ToString(), fromHex.q, fromHex.r, fromHex.s, destinationHex.q, destinationHex.r, destinationHex.s, appliedTile.Team.ToString());
 
-                        // Switch to opponent's turn after successful move
-                        SwitchTurns();
-                        
-                        // Check if anyone won
-                        CheckWinCondition();
+                            SwitchTurns();
+                            CheckWinCondition();
 
-                        //reset drag area
-                        topMost = default(Hex); bottomMost = default(Hex); leftMost = default(Hex); rightMost = default(Hex);
-                        foreach (var hex in _board.Tiles.Select(t => t.Value))
-                        {
-                            if (hex.Location.s + (-1 * hex.Location.r) > topMost.s + (-1 * topMost.r))
-                                topMost = hex.Location;
-                            if (hex.Location.s + (-1 * hex.Location.r) < bottomMost.s + (-1 * bottomMost.r))
-                                bottomMost = hex.Location;
-                            if (hex.Location.q < leftMost.q)
-                                leftMost = hex.Location;
-                            if (hex.Location.q > rightMost.q)
-                                rightMost = hex.Location;
+                            topMost = default(Hex); bottomMost = default(Hex); leftMost = default(Hex); rightMost = default(Hex);
+                            foreach (var hex in _board.Tiles.Select(t => t.Value))
+                            {
+                                if (hex.Location.s + (-1 * hex.Location.r) > topMost.s + (-1 * topMost.r)) topMost = hex.Location;
+                                if (hex.Location.s + (-1 * hex.Location.r) < bottomMost.s + (-1 * bottomMost.r)) bottomMost = hex.Location;
+                                if (hex.Location.q < leftMost.q) leftMost = hex.Location;
+                                if (hex.Location.q > rightMost.q) rightMost = hex.Location;
+                            }
                         }
                     }
                 }
@@ -292,8 +255,40 @@ namespace HiveOnline
 
         private void ProcessNetworkMessages()
         {
-            while (_networkClient != null && _networkClient.IsConnected && _networkClient.TryDequeueMessage(out var message))
+            while (_networkClient != null && _networkClient.IsConnected && _pendingNetworkMessages.TryDequeue(out var message))
                 ProcessIncomingNetworkMessage(message);
+        }
+
+        private void ApplyChatInput(ChatInputResult input)
+        {
+            if (input.Submit)
+            {
+                if (!string.IsNullOrWhiteSpace(_board.ChatWindow.TypingText))
+                {
+                    _board.ChatWindow.ChatMessages.Push(new ChatMessage
+                    {
+                        Message = _board.ChatWindow.TypingText,
+                        PlayerName = _board.UserName,
+                        PlayerTeam = 1
+                    });
+                }
+
+                _board.ChatWindow.TypingText = string.Empty;
+                _board.ChatWindow.IsTyping = false;
+            }
+            else if (input.Backspace && _board.ChatWindow.TypingText.Length > 0)
+            {
+                _board.ChatWindow.TypingText = _board.ChatWindow.TypingText.Substring(0, _board.ChatWindow.TypingText.Length - 1);
+            }
+            else if (input.Cancel)
+            {
+                _board.ChatWindow.TypingText = string.Empty;
+                _board.ChatWindow.IsTyping = false;
+            }
+            else if (!string.IsNullOrEmpty(input.Text))
+            {
+                _board.ChatWindow.TypingText += input.Text;
+            }
         }
 
         private bool HandleCompletedGame(MouseState mouseState, ref HexPoint originHexPoint, ref HexPoint originalSize)
@@ -383,8 +378,10 @@ namespace HiveOnline
                 if (fromCoords.Length != 3 || toCoords.Length != 3)
                     return;
 
-                var team = Enum.TryParse<BugTeam>(teamValue, true, out var parsedTeam) ? parsedTeam : BugTeam.Blank;
-                var type = Enum.TryParse<BugType>(typeValue, true, out var parsedType) ? parsedType : BugType.QueenBee;
+                if (!Enum.TryParse<BugTeam>(teamValue, true, out var team) ||
+                    !Enum.TryParse<BugType>(typeValue, true, out var type) ||
+                    team == BugTeam.Blank || type == BugType.Blank)
+                    return;
 
                 var fromHex = new Hex(int.Parse(fromCoords[0]), int.Parse(fromCoords[1]), int.Parse(fromCoords[2]));
                 var toHex = new Hex(int.Parse(toCoords[0]), int.Parse(toCoords[1]), int.Parse(toCoords[2]));
@@ -393,20 +390,15 @@ namespace HiveOnline
                 if (remoteTile == null)
                     return;
 
-                remoteTile.Location = toHex;
-
-                if (_board.ContainsTile(toHex))
-                {
-                    _board.RemoveTile(_board.Tiles[toHex.GetHashCode()]);
-                }
-
-                _board.AddTile(remoteTile);
+                if (!TryApplyMove(remoteTile, fromHex, toHex, team, out _))
+                    return;
 
                 if (team == BugTeam.Dark)
                 {
                     _opponentTurnCount++;
                     _playingState = PlayingState.YourTurn;
                     UpdateTurnDisplay();
+                    CheckWinCondition();
                 }
             }
             catch
@@ -426,15 +418,51 @@ namespace HiveOnline
 
             if (team == BugTeam.Light)
             {
-                return _board.UserPile.GetTile(bugType);
+                return _board.UserPile.Peek(bugType);
             }
 
             if (team == BugTeam.Dark)
             {
-                return _board.OpponentPile.GetTile(bugType);
+                return _board.OpponentPile.Peek(bugType);
             }
 
             return null;
+        }
+
+        private bool TryApplyMove(ITile requestedTile, Hex from, Hex destination,
+            BugTeam team, out ITile appliedTile)
+        {
+            appliedTile = null;
+            if (requestedTile == null || requestedTile.Team != team)
+                return false;
+
+            var isPlacement = !_board.ContainsTile(requestedTile);
+
+            if (isPlacement)
+            {
+                var pile = team == BugTeam.Light ? _board.UserPile : _board.OpponentPile;
+                if (MustPlayQueen(requestedTile) || !pile.CalculateAvailable(_board, team).Any(hex => hex == destination))
+                    return false;
+
+                appliedTile = pile.GetTile(requestedTile.Type);
+            }
+            else
+            {
+                if (!_board.Tiles.TryGetValue(from.GetHashCode(), out var boardTile) ||
+                    boardTile != requestedTile || !requestedTile.CanMove(_board) ||
+                    !requestedTile.CanMoveTo(_board, destination))
+                    return false;
+
+                _board.RemoveTile(boardTile);
+                appliedTile = requestedTile;
+            }
+
+            appliedTile.Location = destination;
+            _board.AddTile(appliedTile);
+            OnPiecePlaced(appliedTile);
+            _board.SelectedTile = null;
+            _board.ClearAvailableTiles();
+            return true;
         }
 
         private void SwitchTurns()

@@ -23,14 +23,15 @@ public sealed class BoardRenderer
     public void Resize(BoardViewState view, PlayingBoard board)
     {
         _chatGraphics.ChangeScreenSize(new HexPoint(view.ScreenSize.X, view.ScreenSize.Y));
-        var userBounds = GetPileBounds(view, board.UserPile, false);
-        var opponentBounds = GetPileBounds(view, board.OpponentPile, true);
-        _userPileGraphics.ChangeScreenSize(view.ScreenSize.X, view.ScreenSize.Y, userBounds.Width / 100, 100, false);
-        _opponentPileGraphics.ChangeScreenSize(view.ScreenSize.X, view.ScreenSize.Y, opponentBounds.Width / 100, 100, true);
+        var userBounds = view.GetPileBounds(board.UserPile, false);
+        var opponentBounds = view.GetPileBounds(board.OpponentPile, true);
+        _userPileGraphics.SetBounds(userBounds);
+        _opponentPileGraphics.SetBounds(opponentBounds);
     }
 
-    public void Draw(PlayingBoard board, BoardViewState view)
+    public void Draw(PlayingBoard board, BoardViewState view, RenderContext context)
     {
+        BindContext(context);
         _boardGraphics.Draw(board.UserName, board.OpponentName, board.CurrentTurn);
 
         if (_renderTilesDirty || _renderedBoardVersion != board.Version)
@@ -66,6 +67,15 @@ public sealed class BoardRenderer
     }
 
     public void MarkTilesDirty() => _renderTilesDirty = true;
+
+    private void BindContext(RenderContext context)
+    {
+        _boardGraphics.Bind(context);
+        _tileGraphics.Bind(context);
+        _userPileGraphics.Bind(context);
+        _opponentPileGraphics.Bind(context);
+        _chatGraphics.Bind(context);
+    }
 
     private void DrawTile(ITile tile, BoardViewState view)
     {
@@ -128,16 +138,4 @@ public sealed class BoardRenderer
         _boardGraphics.DrawHexagon(corners, 4, 217, 255);
     }
 
-    private static Rectangle GetPileBounds(BoardViewState view, Pile pile, bool opponent)
-    {
-        var width = 0;
-        foreach (var bugType in Enum.GetValues<BugType>())
-        {
-            if (bugType != BugType.Blank && pile.GetCount(bugType) > 0)
-                width += 100;
-        }
-        return opponent
-            ? new Rectangle(view.ScreenSize.X - width - 5, 5, width, 75)
-            : new Rectangle(5, view.ScreenSize.Y - 75, width, 75);
-    }
 }

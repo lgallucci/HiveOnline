@@ -19,7 +19,7 @@ namespace HiveLib.Bugs
         public override List<Hex> CalculateAvailable(PlayingBoard board)
         {
             _travelCount = 0; 
-            board.TestSpots.Clear();
+            board.ClearTestSpots();
             var available = TraverseOutside(board, GetBoardWithoutMe(board), Location, new List<Hex> (), 3);
             return available;
         }
@@ -43,7 +43,7 @@ namespace HiveLib.Bugs
                         _travelCount++;
                         if (hopsLeft > 0)
                         {
-                            board.TestSpots.Add(_travelCount, currentLocation);
+                            board.AddTestSpot(_travelCount, currentLocation);
                             traveledLocations.Add(currentLocation);
                             availableLocations.AddRange(TraverseOutside(board, woBoard, neighbor, traveledLocations, hopsLeft - 1));
                         }

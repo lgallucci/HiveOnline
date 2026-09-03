@@ -16,7 +16,7 @@ namespace HiveLib.Bugs
 
         public override List<Hex> CalculateAvailable(PlayingBoard board)
         {
-            board.TestSpots.Clear();
+            board.ClearTestSpots();
             var available = TraverseOutside(GetBoardWithoutMe(board), Location, new List<Hex>());
             return available;
         }

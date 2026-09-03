@@ -6,9 +6,10 @@ namespace HiveGraphics
     {
         public Point ScreenSize { get; set; }
         public GraphicsDeviceManager GraphicsDeviceManager { get; set; }
-        public static GraphicsDevice Device { get; set; }
-        public static SpriteBatch SpriteBatch { get; set; }
-        public static BloomRenderer BloomRenderer { get; private set; }
+        public GraphicsDevice Device { get; private set; }
+        public SpriteBatch SpriteBatch { get; private set; }
+        public BloomRenderer BloomRenderer { get; private set; }
+        public RenderContext Context { get; }
         private RenderTarget2D _sceneRenderTarget;
 
         public GraphicsEngine(Game game)
@@ -19,12 +20,14 @@ namespace HiveGraphics
             GraphicsDeviceManager.GraphicsProfile = GraphicsProfile.HiDef;
 
             BloomRenderer = new BloomRenderer();
+            Context = new RenderContext(BloomRenderer);
         }
         public void Load(GraphicsDevice device, ContentManager content)
         {
             Device = device;
             // Create a new SpriteBatch, which can be used to draw textures.
             SpriteBatch = new SpriteBatch(device);
+            Context.SpriteBatch = SpriteBatch;
             BloomRenderer.Load(device, content, ScreenSize.X, ScreenSize.Y);
 
             _sceneRenderTarget = CreateSceneRenderTarget();
@@ -99,31 +102,31 @@ namespace HiveGraphics
                 SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.DiscardContents);
         }
 
-        public static void DrawBloom(Texture2D texture, Vector2 position, Color color,
+        public void DrawBloom(Texture2D texture, Vector2 position, Color color,
             float rotation = 0f, Vector2 origin = default, Vector2? scale = null,
             SpriteEffects effects = SpriteEffects.None, float layerDepth = 0f)
         {
             BloomRenderer.Draw(texture, position, color, rotation, origin, scale, effects, layerDepth);
         }
 
-        public static void DrawBloom(Texture2D texture, Vector2 position, Rectangle? sourceRectangle,
+        public void DrawBloom(Texture2D texture, Vector2 position, Rectangle? sourceRectangle,
             Color color, float rotation = 0f, Vector2 origin = default, Vector2? scale = null,
             SpriteEffects effects = SpriteEffects.None, float layerDepth = 0f)
         {
             BloomRenderer.Draw(texture, position, sourceRectangle, color, rotation, origin, scale, effects, layerDepth);
         }
 
-        public static void DrawBloom(Texture2D texture, Rectangle destinationRectangle, Color color)
+        public void DrawBloom(Texture2D texture, Rectangle destinationRectangle, Color color)
         {
             BloomRenderer.Draw(texture, destinationRectangle, color);
         }
 
-        public static void DrawBloomLine(Texture2D texture, Vector2 start, Vector2 end, Color color, float width)
+        public void DrawBloomLine(Texture2D texture, Vector2 start, Vector2 end, Color color, float width)
         {
             BloomRenderer.DrawLine(texture, start, end, color, width);
         }
 
-        internal static void SetRenderTarget(RenderTarget2D value)
+        internal void SetRenderTarget(RenderTarget2D value)
         {
             Device.SetRenderTarget(value);
         }

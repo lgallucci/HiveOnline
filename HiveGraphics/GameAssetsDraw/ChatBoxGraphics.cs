@@ -21,7 +21,7 @@ public class ChatBoxGraphics : DrawableObject
     public void Draw(string typingText, bool isTyping, IEnumerable<ChatMessage> messages)
     {
         //DRAW BOX
-        GraphicsEngine.SpriteBatch.Draw(Art.Pixel, Location, new Color(26, 50, 38));
+        Context.SpriteBatch.Draw(Art.Pixel, Location, new Color(26, 50, 38));
 
         //DRAW LINE
         if (!string.IsNullOrWhiteSpace(typingText) || isTyping)
@@ -31,12 +31,12 @@ public class ChatBoxGraphics : DrawableObject
 
         var typingTextSize = Art.ChatFont.MeasureString(typingText);
         var lineHeight = Location.Bottom - typingTextSize.Y - _textBuffer;
-        GraphicsEngine.SpriteBatch.DrawLine(Art.Pixel, new Vector2(Location.Left, lineHeight),
+        Context.SpriteBatch.DrawLine(Art.Pixel, new Vector2(Location.Left, lineHeight),
                              new Vector2(Location.Right, lineHeight),
                              Color.MintCream, 2f);
 
         //DRAW TYPING TEXT
-        GraphicsEngine.SpriteBatch.DrawString(Art.ChatFont, typingText, new Vector2(Location.Left + _textBuffer, Location.Bottom - typingTextSize.Y - _textBuffer), Color.MintCream);
+        Context.SpriteBatch.DrawString(Art.ChatFont, typingText, new Vector2(Location.Left + _textBuffer, Location.Bottom - typingTextSize.Y - _textBuffer), Color.MintCream);
 
         int textHeight = 0;
         //DRAW SERVER TEXT
@@ -62,9 +62,9 @@ public class ChatBoxGraphics : DrawableObject
 
         textHeight += (int)layout.Height;
 
-        GraphicsEngine.SpriteBatch.DrawString(font, playerName, new Vector2(Location.Left + _textBuffer, lineHeight - textHeight - 5), GetPlayerColor(playerTeam));
+        Context.SpriteBatch.DrawString(font, playerName, new Vector2(Location.Left + _textBuffer, lineHeight - textHeight - 5), GetPlayerColor(playerTeam));
 
-        GraphicsEngine.SpriteBatch.DrawString(font, layout.WrappedText, new Vector2(Location.Left + _textBuffer + layout.NameWidth, lineHeight - textHeight - 5), Color.MintCream);
+        Context.SpriteBatch.DrawString(font, layout.WrappedText, new Vector2(Location.Left + _textBuffer + layout.NameWidth, lineHeight - textHeight - 5), Color.MintCream);
 
         return textHeight;
     }

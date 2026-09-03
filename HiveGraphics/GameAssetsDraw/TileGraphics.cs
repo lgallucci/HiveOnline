@@ -8,7 +8,7 @@ public class TileGraphics : DrawableObject
     {
         var texture = GetTexture(bugType, team);
         
-        GraphicsEngine.SpriteBatch.Draw(
+        Context.SpriteBatch.Draw(
             texture,
             location.ToVector2(),
             new Rectangle(0, 0, texture.Width, texture.Height),
@@ -23,7 +23,7 @@ public class TileGraphics : DrawableObject
     {
         var vector2 = layout.HexToPixel(location);
 
-        GraphicsEngine.SpriteBatch.DrawString(Art.PileFont, $"{location.q}, {location.r}, {location.s}",
+        Context.SpriteBatch.DrawString(Art.PileFont, $"{location.q}, {location.r}, {location.s}",
             new Vector2((float)vector2.X - 30, (float)vector2.Y - 7), Color.Red);
     }
 

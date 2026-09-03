@@ -15,19 +15,15 @@ public class PileGraphics : DrawableObject
         _tileSize = tileSize;
     }
 
-    public void ChangeScreenSize(int width, int height, int stackCount, int placementWidth, bool isOpponent)
+    public void SetBounds(Rectangle bounds)
     {
-        var pileWidth = stackCount * placementWidth;
-        if (!isOpponent)
-            Location = new Rectangle(5, height - 75, pileWidth, 75);
-        else
-            Location = new Rectangle(width - pileWidth - 5, 5, pileWidth, 75);
+        Location = bounds;
     }
 
     public void DrawBox()
     {
         //DRAW BOX
-        GraphicsEngine.SpriteBatch.Draw(Art.Pixel, Location, new Color(48, 90, 70));
+        Context.SpriteBatch.Draw(Art.Pixel, Location, new Color(48, 90, 70));
     }
 
     public void DrawBug(Action<HexPoint, HexPoint> tileDraw, HexPoint position, string numberString)
@@ -41,6 +37,6 @@ public class PileGraphics : DrawableObject
     private void DrawString(string numberString, int bufferSize)
     {
         var fontSize = Art.PileFont.MeasureString(numberString);
-        GraphicsEngine.SpriteBatch.DrawString(Art.PileFont, numberString, new Vector2(Location.Left + bufferSize + _tileSize - 10, Location.Bottom - fontSize.Y - 5), Color.MintCream);
+        Context.SpriteBatch.DrawString(Art.PileFont, numberString, new Vector2(Location.Left + bufferSize + _tileSize - 10, Location.Bottom - fontSize.Y - 5), Color.MintCream);
     }
 }

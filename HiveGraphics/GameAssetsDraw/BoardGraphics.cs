@@ -13,15 +13,15 @@ public class BoardGraphics : DrawableObject
         var opponentNameSize = Art.NameFont.MeasureString(opponentName);
         var turnSize = Art.NameFont.MeasureString(currentTurn);
         
-        GraphicsEngine.SpriteBatch.DrawString(Art.NameFont, userName, 
+        Context.SpriteBatch.DrawString(Art.NameFont, userName, 
             new Vector2(5, /*window height - font height*/(float)Height - userNameSize.Y - 75), Color.CornflowerBlue);
-        GraphicsEngine.SpriteBatch.DrawString(Art.NameFont, opponentName, 
+        Context.SpriteBatch.DrawString(Art.NameFont, opponentName, 
             new Vector2(/*window width - font width*/(float)Width - opponentNameSize.X - 5, 75), Color.Red);
         
         // Display current turn in the center top
         if (!string.IsNullOrEmpty(currentTurn))
         {
-            GraphicsEngine.SpriteBatch.DrawString(Art.NameFont, currentTurn,
+            Context.SpriteBatch.DrawString(Art.NameFont, currentTurn,
                 new Vector2(10, 10), Color.Yellow);
         }
     }
@@ -40,8 +40,8 @@ public class BoardGraphics : DrawableObject
             if (previousPoint.HasValue)
             {
                 var color = new Color(colorR, colorG, colorB);
-                GraphicsEngine.SpriteBatch.DrawLine(Art.Pixel, corner.ToVector2(), previousPoint.Value.ToVector2(), color, 4f);
-                GraphicsEngine.DrawBloomLine(Art.Pixel, corner.ToVector2(), previousPoint.Value.ToVector2(), color, 4f);
+                Context.SpriteBatch.DrawLine(Art.Pixel, corner.ToVector2(), previousPoint.Value.ToVector2(), color, 4f);
+                Context.Bloom.DrawLine(Art.Pixel, corner.ToVector2(), previousPoint.Value.ToVector2(), color, 4f);
             }
             else
             {
@@ -52,15 +52,15 @@ public class BoardGraphics : DrawableObject
         }
 
         var outlineColor = new Color(colorR, colorG, colorB);
-        GraphicsEngine.SpriteBatch.DrawLine(Art.Pixel, firstPoint.ToVector2(), previousPoint.Value.ToVector2(), outlineColor, 4f);
-        GraphicsEngine.DrawBloomLine(Art.Pixel, firstPoint.ToVector2(), previousPoint.Value.ToVector2(), outlineColor, 4f);
+        Context.SpriteBatch.DrawLine(Art.Pixel, firstPoint.ToVector2(), previousPoint.Value.ToVector2(), outlineColor, 4f);
+        Context.Bloom.DrawLine(Art.Pixel, firstPoint.ToVector2(), previousPoint.Value.ToVector2(), outlineColor, 4f);
     }
 
     public void DrawText(Layout layout, Hex location, string text, int colorR, int colorG, int colorB)
     {
         var vector2 = layout.HexToPixel(location);
 
-        GraphicsEngine.SpriteBatch.DrawString(Art.ChatFont, text,
+        Context.SpriteBatch.DrawString(Art.ChatFont, text,
             new Vector2((float)vector2.X - 30, (float)vector2.Y - 7), new Color(colorR, colorG, colorB));
 
     }

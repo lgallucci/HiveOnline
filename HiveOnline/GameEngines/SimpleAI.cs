@@ -188,23 +188,24 @@ namespace HiveOnline
 
             var originalLocation = piece.Location;
             var originalTile = _board.Tiles.ContainsKey(originalLocation.GetHashCode()) ? _board.Tiles[originalLocation.GetHashCode()] : null;
+            var originalDestinationTile = _board.Tiles.ContainsKey(destination.GetHashCode()) ? _board.Tiles[destination.GetHashCode()] : null;
 
-            if (originalTile != null && originalLocation != destination)
+            try
             {
-                _board.RemoveTile(originalTile);
-            }
-
-            piece.Location = destination;
-            if (_board.Tiles.ContainsKey(destination.GetHashCode()))
-            {
-                var existing = _board.Tiles[destination.GetHashCode()];
-                if (existing != piece)
+                if (originalTile != null && originalLocation != destination)
                 {
-                    _board.RemoveTile(existing);
+                    _board.RemoveTile(originalTile);
                 }
-            }
 
-            _board.AddTile(piece);
+                piece.Location = destination;
+                if (_board.Tiles.ContainsKey(destination.GetHashCode()))
+                {
+                    var existing = _board.Tiles[destination.GetHashCode()];
+                    if (existing != piece)
+                        _board.RemoveTile(existing);
+                }
+
+                _board.AddTile(piece);
 
             foreach (var neighbor in Enumerable.Range(0, 6).Select(i => destination.Neighbor(i)))
             {
@@ -242,19 +243,18 @@ namespace HiveOnline
             var centerDistance = Math.Abs(destination.q) + Math.Abs(destination.r) + Math.Abs(destination.s);
             score += Math.Max(0, 5 - centerDistance) * 2;
 
-            if (originalTile != null)
-            {
-                _board.RemoveTile(piece);
-                piece.Location = originalLocation;
-                _board.AddTile(originalTile);
+                return score;
             }
-            else
+            finally
             {
-                _board.RemoveTile(piece);
+                if (_board.ContainsTile(piece))
+                    _board.RemoveTile(piece);
                 piece.Location = originalLocation;
+                if (originalTile != null)
+                    _board.AddTile(originalTile);
+                if (originalDestinationTile != null)
+                    _board.AddTile(originalDestinationTile);
             }
-
-            return score;
         }
 
         private BugType SelectBestBugType(List<BugType> availableBugTypes, bool queenPlaced)

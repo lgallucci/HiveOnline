@@ -33,7 +33,7 @@ namespace HiveOnline.GameAssets
                     int spiderCount = 2)
         {
             _team = team;
-            while (beetleCount > 0 || grasshopperCount > 3 || ladyBugCount > 0 || mosquitoCount > 0 || pillBugCount > 0 || queenBeeCount > 0 || soldierAntCount > 0 || spiderCount > 0)
+            while (beetleCount > 0 || grasshopperCount > 0 || ladyBugCount > 0 || mosquitoCount > 0 || pillBugCount > 0 || queenBeeCount > 0 || soldierAntCount > 0 || spiderCount > 0)
             {
                 if (beetleCount > 0)
                 {

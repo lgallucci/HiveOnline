@@ -26,39 +26,17 @@ internal class KeyboardHelper
         _currentKeyState = Keyboard.GetState();
     }
 
-    internal static void HandleRunningKeyboard(PlayingBoard board)
+    internal static ChatInputResult ReadChatInput()
     {
         if (IsKeyPressed(Keys.Enter, true))
-        {
-            if (!string.IsNullOrWhiteSpace(board.ChatWindow.TypingText))
-            {
-                board.ChatWindow.ChatMessages.Push(new ChatMessage
-                {
-                    Message = board.ChatWindow.TypingText,
-                    PlayerName = board.UserName,
-                    PlayerTeam = 1
-                });
-                board.ChatWindow.TypingText = string.Empty;
-                board.ChatWindow.IsTyping = false;
-            }
-        }
-        else if (IsKeyPressed(Keys.Back, true) && board.ChatWindow.TypingText.Length > 0)
-        {
-            board.ChatWindow.TypingText = board.ChatWindow.TypingText.Substring(0, board.ChatWindow.TypingText.Length - 1);
-        }
+            return new ChatInputResult(true, false, false, string.Empty);
+        if (IsKeyPressed(Keys.Back, true))
+            return new ChatInputResult(false, true, false, string.Empty);
         else if (IsKeyPressed(Keys.Escape, false))
-        {
-            board.ChatWindow.TypingText = string.Empty;
-            board.ChatWindow.IsTyping = false;
-        }
-        else
-        {
-            string input = KeyboardHelper.TryConvertKeyboardInput(_currentKeyState, _previousKeyState);
+            return new ChatInputResult(false, false, true, string.Empty);
 
-            if (!string.IsNullOrEmpty(input))
-                board.ChatWindow.TypingText += input;
-        }
-
+        var input = TryConvertKeyboardInput(_currentKeyState, _previousKeyState);
+        return new ChatInputResult(false, false, false, input);
     }
 
     /// <summary>
@@ -156,4 +134,20 @@ internal class KeyboardHelper
         return inputBuilder;
     }
 
+}
+
+internal readonly struct ChatInputResult
+{
+    public ChatInputResult(bool submit, bool backspace, bool cancel, string text)
+    {
+        Submit = submit;
+        Backspace = backspace;
+        Cancel = cancel;
+        Text = text;
+    }
+
+    public bool Submit { get; }
+    public bool Backspace { get; }
+    public bool Cancel { get; }
+    public string Text { get; }
 }
