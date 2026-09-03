@@ -1,7 +1,5 @@
 ﻿using HiveContracts;
-using HiveLib;
-using Microsoft.Xna.Framework.Graphics;
-using System;
+using FontStashSharp;
 
 namespace HiveGraphics.GameAssetsDraw;
 public class TileGraphics : DrawableObject

@@ -1,5 +1,5 @@
 ﻿using HiveContracts;
-using System;
+using FontStashSharp;
 using System.Collections.Generic;
 using System.Text;
 
@@ -46,7 +46,7 @@ public class ChatBoxGraphics : DrawableObject
         }
     }
 
-    public int DrawChatText(SpriteFont font, string playerName, int playerTeam, string message, int textHeight, float lineHeight)
+    public int DrawChatText(DynamicSpriteFont font, string playerName, int playerTeam, string message, int textHeight, float lineHeight)
     {
         var nameOffset = font.MeasureString(playerName).X;
 
@@ -69,7 +69,7 @@ public class ChatBoxGraphics : DrawableObject
         return Color.Red;
     }
 
-    public string WrapText(SpriteFont spriteFont, string text, float maxLineWidth)
+    public string WrapText(DynamicSpriteFont spriteFont, string text, float maxLineWidth)
     {
         string[] words = text.Split(' ');
         StringBuilder sb = new StringBuilder();

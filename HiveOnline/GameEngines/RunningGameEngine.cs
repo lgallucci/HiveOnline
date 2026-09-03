@@ -31,6 +31,7 @@ namespace HiveOnline
         private readonly bool _useAI;
         private readonly HiveGameClient _networkClient;
         private readonly Queue<string> _pendingNetworkMessages = new Queue<string>();
+        private BugTeam _playerTeam;
 
         // Game rule tracking
         private int _playerTurnCount = 0;  // Light player's turn count
@@ -44,6 +45,7 @@ namespace HiveOnline
             _screenHeight = screenHeight;
             _networkClient = networkClient;
             _useAI = useAi;
+            _playerTeam = team;
             _board = new PlayingBoard(screenWidth, screenHeight);
             _ai = new SimpleAI(_board);
 
@@ -170,7 +172,7 @@ namespace HiveOnline
 
                     var bug = _board.UserPile.GetIntersectBug(mouseState.X, mouseState.Y);
 
-                    if (bug != null)
+                    if (bug != null && bug.Team == _playerTeam)
                     {
                         _board.SelectedTile = bug;
                         _board.AddAvailableHexes(_board.UserPile.CalculateAvailable(_board));
@@ -264,7 +266,7 @@ namespace HiveOnline
                 {
                     var tile = _board.Tiles[clickedHex.GetHashCode()];
 
-                    if (tile.CanMove(_board) && (_board.SelectedTile == null || tile.GetHashCode() != _board.SelectedTile.GetHashCode()))
+                    if (tile.Team == _playerTeam && tile.CanMove(_board) && (_board.SelectedTile == null || tile.GetHashCode() != _board.SelectedTile.GetHashCode()))
                     {
                         //Set Selected
                         _board.SelectedTile = tile;

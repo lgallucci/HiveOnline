@@ -1,13 +1,13 @@
 ﻿
 
+using System.IO;
+using FontStashSharp;
+using FontStashSharp.Interfaces;
+
 namespace HiveGraphics
 {
     internal class Art
     {
-        internal static SpriteFont ChatFont { get; private set; }
-        internal static SpriteFont NameFont { get; private set; }
-        internal static SpriteFont PileFont { get; private set; }
-
         //Dark Tiles
         internal static Texture2D DarkBeetle { get; private set; }
         internal static Texture2D DarkGrassHopper { get; private set; }
@@ -32,31 +32,41 @@ namespace HiveGraphics
 
         internal static Texture2D Pixel { get; private set; }
 
+        //Fonts
+        internal static DynamicSpriteFont ChatFont { get; private set; }
+        internal static DynamicSpriteFont NameFont { get; private set; }
+        internal static DynamicSpriteFont PileFont { get; private set; }
+
         internal static void Load(ContentManager content, GraphicsDevice graphicsDevice)
         {
-            ChatFont = content.Load<SpriteFont>("bin/ChatFont");
-            NameFont = content.Load<SpriteFont>("bin/NameFont");
-            PileFont = content.Load<SpriteFont>("bin/PileFont");
+            // Load font system
+            var fontSystem = FontSystemFactory.Create(graphicsDevice, 1024, 1024);
+            fontSystem.AddFont(File.ReadAllBytes("Content/fonts/supersoft.ttf"));
 
-            DarkBeetle = content.Load<Texture2D>("bin/img/beetle_dark");
-            DarkGrassHopper = content.Load<Texture2D>("bin/img/grasshopper_dark");
-            DarkLadyBug = content.Load<Texture2D>("bin/img/ladybug_dark");
-            DarkMosquito = content.Load<Texture2D>("bin/img/mosquito_dark");
-            DarkPillBug = content.Load<Texture2D>("bin/img/pillbug_dark");
-            DarkQueenBee = content.Load<Texture2D>("bin/img/bee_dark");
-            DarkSoldierAnt = content.Load<Texture2D>("bin/img/ant_dark");
-            DarkSpider = content.Load<Texture2D>("bin/img/spider_dark");
+            // Create a dynamic font size
+            ChatFont = fontSystem.GetFont(16);
+            NameFont = fontSystem.GetFont(28);
+            PileFont = fontSystem.GetFont(20);
 
-            LightBeetle = content.Load<Texture2D>("bin/img/beetle_light");
-            LightGrassHopper = content.Load<Texture2D>("bin/img/grasshopper_light");
-            LightLadyBug = content.Load<Texture2D>("bin/img/ladybug_light");
-            LightMosquito = content.Load<Texture2D>("bin/img/mosquito_light");
-            LightPillBug = content.Load<Texture2D>("bin/img/pillbug_light");
-            LightQueenBee = content.Load<Texture2D>("bin/img/bee_light");
-            LightSoldierAnt = content.Load<Texture2D>("bin/img/ant_light");
-            LightSpider = content.Load<Texture2D>("bin/img/spider_light");
+            DarkBeetle = Texture2D.FromFile(graphicsDevice, "Content/img/beetle_dark.png");
+            DarkGrassHopper = Texture2D.FromFile(graphicsDevice, "Content/img/grasshopper_dark.png");
+            DarkLadyBug = Texture2D.FromFile(graphicsDevice, "Content/img/ladybug_dark.png");
+            DarkMosquito = Texture2D.FromFile(graphicsDevice, "Content/img/mosquito_dark.png");
+            DarkPillBug = Texture2D.FromFile(graphicsDevice, "Content/img/pillbug_dark.png");
+            DarkQueenBee = Texture2D.FromFile(graphicsDevice, "Content/img/bee_dark.png");
+            DarkSoldierAnt = Texture2D.FromFile(graphicsDevice, "Content/img/ant_dark.png");
+            DarkSpider = Texture2D.FromFile(graphicsDevice, "Content/img/spider_dark.png");
 
-            BlankBug = content.Load<Texture2D>("bin/img/blank_dark");
+            LightBeetle = Texture2D.FromFile(graphicsDevice, "Content/img/beetle_light.png");
+            LightGrassHopper = Texture2D.FromFile(graphicsDevice, "Content/img/grasshopper_light.png");
+            LightLadyBug = Texture2D.FromFile(graphicsDevice, "Content/img/ladybug_light.png");
+            LightMosquito = Texture2D.FromFile(graphicsDevice, "Content/img/mosquito_light.png");
+            LightPillBug = Texture2D.FromFile(graphicsDevice, "Content/img/pillbug_light.png");
+            LightQueenBee = Texture2D.FromFile(graphicsDevice, "Content/img/bee_light.png");
+            LightSoldierAnt = Texture2D.FromFile(graphicsDevice, "Content/img/ant_light.png");
+            LightSpider = Texture2D.FromFile(graphicsDevice, "Content/img/spider_light.png");
+
+            BlankBug = Texture2D.FromFile(graphicsDevice, "Content/img/blank_dark.png");
 
             Pixel = new Texture2D(graphicsDevice, 1, 1);
             Pixel.SetData(new[] { Color.White });

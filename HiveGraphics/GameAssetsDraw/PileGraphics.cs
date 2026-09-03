@@ -3,6 +3,7 @@
 
 using HiveContracts;
 using System;
+using FontStashSharp;
 
 namespace HiveGraphics.GameAssetsDraw;
 public class PileGraphics : DrawableObject

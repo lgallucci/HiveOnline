@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="FontStashSharp.MonoGame" Version="0.8.7" />
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.1.303" />
   </ItemGroup>
 
@@ -13,67 +14,70 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Content\bin\ChatFont.xnb">
+    <None Update="Content\img\ant_dark.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Content\bin\img\ant_dark.xnb">
+    <None Update="Content\img\ant_light.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Content\bin\img\ant_light.xnb">
+    <None Update="Content\img\beetle_dark.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Content\bin\img\beetle_dark.xnb">
+    <None Update="Content\img\beetle_light.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Content\bin\img\beetle_light.xnb">
+    <None Update="Content\img\bee_dark.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Content\bin\img\bee_dark.xnb">
+    <None Update="Content\img\bee_light.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Content\bin\img\bee_light.xnb">
+    <None Update="Content\img\blank_dark.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Content\bin\img\blank_dark.xnb">
+    <None Update="Content\img\blank_light.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Content\bin\img\blank_light.xnb">
+    <None Update="Content\img\grasshopper_dark.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Content\bin\img\grasshopper_dark.xnb">
+    <None Update="Content\img\grasshopper_light.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Content\bin\img\grasshopper_light.xnb">
+    <None Update="Content\img\ladybug_dark.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Content\bin\img\ladybug_dark.xnb">
+    <None Update="Content\img\ladybug_light.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Content\bin\img\ladybug_light.xnb">
+    <None Update="Content\img\mosquito_dark.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Content\bin\img\mosquito_dark.xnb">
+    <None Update="Content\img\mosquito_light.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Content\bin\img\mosquito_light.xnb">
+    <None Update="Content\img\pillbug_dark.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Content\bin\img\pillbug_dark.xnb">
+    <None Update="Content\img\pillbug_light.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Content\bin\img\pillbug_light.xnb">
+    <None Update="Content\img\spider_dark.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Content\bin\img\spider_dark.xnb">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Content\bin\img\spider_light.xnb">
+    <None Update="Content\img\spider_light.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Content\bin\NameFont.xnb">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Content\bin\PileFont.xnb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Content\bin\ChatFont.xnb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Content\fonts\supersoft.ttf">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Content\bin\shaders\Bloom.xnb">

@@ -2,6 +2,7 @@
 using HiveContracts;
 using System;
 using System.Collections.Generic;
+using FontStashSharp;
 
 namespace HiveGraphics.GameAssetsDraw;
 public class BoardGraphics : DrawableObject
@@ -38,7 +39,9 @@ public class BoardGraphics : DrawableObject
         {
             if (previousPoint.HasValue)
             {
-                GraphicsEngine.SpriteBatch.DrawLine(Art.Pixel, corner.ToVector2(), previousPoint.Value.ToVector2(), new Color(colorR, colorG, colorB), 4f);
+                var color = new Color(colorR, colorG, colorB);
+                GraphicsEngine.SpriteBatch.DrawLine(Art.Pixel, corner.ToVector2(), previousPoint.Value.ToVector2(), color, 4f);
+                GraphicsEngine.QueueBloomLine(Art.Pixel, corner.ToVector2(), previousPoint.Value.ToVector2(), color, 4f);
             }
             else
             {
@@ -48,7 +51,9 @@ public class BoardGraphics : DrawableObject
             previousPoint = corner;
         }
 
-        GraphicsEngine.SpriteBatch.DrawLine(Art.Pixel, firstPoint.ToVector2(), previousPoint.Value.ToVector2(), new Color(colorR, colorG, colorB), 4f);
+        var outlineColor = new Color(colorR, colorG, colorB);
+        GraphicsEngine.SpriteBatch.DrawLine(Art.Pixel, firstPoint.ToVector2(), previousPoint.Value.ToVector2(), outlineColor, 4f);
+        GraphicsEngine.QueueBloomLine(Art.Pixel, firstPoint.ToVector2(), previousPoint.Value.ToVector2(), outlineColor, 4f);
     }
 
     public void DrawText(Layout layout, Hex location, string text, int colorR, int colorG, int colorB)
@@ -57,5 +62,6 @@ public class BoardGraphics : DrawableObject
 
         GraphicsEngine.SpriteBatch.DrawString(Art.ChatFont, text,
             new Vector2((float)vector2.X - 30, (float)vector2.Y - 7), new Color(colorR, colorG, colorB));
+
     }
 }
