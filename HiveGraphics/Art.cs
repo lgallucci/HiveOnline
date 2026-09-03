@@ -43,8 +43,11 @@ namespace HiveGraphics
             var fontSystem = FontSystemFactory.Create(graphicsDevice, 1024, 1024);
             fontSystem.AddFont(File.ReadAllBytes("Content/fonts/supersoft.ttf"));
 
+            var robotoFont = FontSystemFactory.Create(graphicsDevice, 1024, 1024);
+            robotoFont.AddFont(File.ReadAllBytes("Content/fonts/roboto.ttf"));
+
             // Create a dynamic font size
-            ChatFont = fontSystem.GetFont(16);
+            ChatFont = robotoFont.GetFont(16);
             NameFont = fontSystem.GetFont(28);
             PileFont = fontSystem.GetFont(20);
 

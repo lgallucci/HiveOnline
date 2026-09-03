@@ -1,13 +1,9 @@
 ﻿using HiveClient;
 using HiveContracts;
 using HiveGraphics;
-using HiveLib;
-using HiveLib.Bugs;
-using HiveOnline.GameAssets;
 using HiveOnline.GameEngines;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
 using System;
 
 namespace HiveOnline
@@ -142,7 +138,7 @@ namespace HiveOnline
         {
             GraphicsDevice.Clear(new Color(53, 101, 77));
 
-            _graphicsEngine.BeingSprites();
+            _graphicsEngine.BeginSprites();
 
             _gameEngine.Draw(_graphicsEngine);
 
