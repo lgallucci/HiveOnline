@@ -1,7 +1,5 @@
 ﻿using HiveContracts;
 using HiveLib.GameAssets;
-using HiveGraphics.GameAssetsDraw;
-using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 using HiveLib.SearchAlgorithms;
 using System.Linq;
@@ -16,20 +14,6 @@ namespace HiveOnline.GameAssets
         public BugTeam Team { get; set; }
 
         public bool IsInspecting { get; set; }
-
-        public TileGraphics Graphics { get; set; } = new TileGraphics();
-
-        public virtual void Draw(PlayingBoard board)
-        {
-            var location = board.Layout.HexToPixel(Location);
-            Graphics.Draw(Type, Team, location, board.Layout.size * 2);
-            //Graphics.DrawCoordinates(board.Layout, Location);
-        }
-
-        public virtual void Draw(HexPoint location, HexPoint size)
-        {
-            Graphics.Draw(Type, Team, location, size);
-        }
 
         public override int GetHashCode()
         {

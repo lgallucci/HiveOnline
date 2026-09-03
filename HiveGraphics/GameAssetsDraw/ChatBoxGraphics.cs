@@ -1,4 +1,5 @@
 ﻿using HiveContracts;
+using HiveLib.GameAssets;
 using FontStashSharp;
 using System.Collections.Generic;
 using System.Text;
@@ -17,7 +18,7 @@ public class ChatBoxGraphics : DrawableObject
 
     private readonly Dictionary<string, ChatLayout> _layoutCache = new Dictionary<string, ChatLayout>();
 
-    public void Draw(string typingText, bool isTyping, IEnumerable<(string, int, string)> messages)
+    public void Draw(string typingText, bool isTyping, IEnumerable<ChatMessage> messages)
     {
         //DRAW BOX
         GraphicsEngine.SpriteBatch.Draw(Art.Pixel, Location, new Color(26, 50, 38));
@@ -43,7 +44,7 @@ public class ChatBoxGraphics : DrawableObject
         {
             if (lineHeight - textHeight - 5 > Location.Top)
             {
-                textHeight = DrawChatText(Art.ChatFont, text.Item1, text.Item2, text.Item3, textHeight, lineHeight);
+                textHeight = DrawChatText(Art.ChatFont, text.PlayerName, text.PlayerTeam, text.Message, textHeight, lineHeight);
             }
         }
     }

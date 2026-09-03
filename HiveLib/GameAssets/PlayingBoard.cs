@@ -2,7 +2,6 @@
 using HiveLib;
 using HiveLib.GameAssets;
 using HiveLib.SearchAlgorithms;
-using HiveGraphics.GameAssetsDraw;
 using System.Collections.Generic;
 using System;
 
@@ -10,14 +9,11 @@ namespace HiveOnline.GameAssets
 {
     public class PlayingBoard : IBoard
     {
-        public Layout Layout { get; set; }
         public ChatBox ChatWindow { get; set; }
 
         public ITile SelectedTile { get; set; }
         public Dictionary<int, ITile> Tiles { get; set; } = new Dictionary<int, ITile>();
         public Dictionary<int, Hex> AvailableTiles { get; set; } = new Dictionary<int, Hex>();
-        private readonly List<ITile> _renderTiles = new List<ITile>();
-        private bool _renderTilesDirty = true;
 
         public string UserName { get; set; } = "TestUser";
         public Pile UserPile { get; set; }
@@ -25,78 +21,14 @@ namespace HiveOnline.GameAssets
         public Pile OpponentPile { get; set; }
         public string CurrentTurn { get; set; } = "Your Turn";
 
-        public BoardGraphics Graphics { get; set; } = new BoardGraphics();
         public Dictionary<int, Hex> TestSpots { get; set; } = new Dictionary<int, Hex>();
+        public int Version { get; private set; }
 
-        public PlayingBoard(int width, int height)
+        public PlayingBoard()
         {
             ChatWindow = new ChatBox();
             UserPile = new Pile(BugTeam.Light);
             OpponentPile = new Pile(BugTeam.Dark);
-
-            SetScreenSize(width, height);
-        }
-
-        public void Draw()
-        {
-            Graphics.Draw(UserName, OpponentName, CurrentTurn);
-
-            //Draw Grid
-            if (_renderTilesDirty)
-            {
-                _renderTiles.Clear();
-                _renderTiles.AddRange(Tiles.Values);
-                _renderTiles.Sort((left, right) => left.Type.CompareTo(right.Type));
-                _renderTilesDirty = false;
-            }
-
-            foreach (var tile in _renderTiles)
-            {
-                tile.Draw(this);
-            }
-
-            foreach (var testSpot in TestSpots)
-                Graphics.DrawHexagon(Layout, testSpot.Value, 255, 247, 0);
-
-            foreach (var tile in AvailableTiles)
-            {
-                Graphics.DrawHexagon(Layout, tile.Value, 170, 189, 100);
-                //Graphics.DrawText(Layout, tile.Value, $"{tile.Value.q}, {tile.Value.r}, {tile.Value.s}", 255, 247, 0);
-            }
-
-            DrawPiles();
-
-            ChatWindow.Draw();
-
-            if (SelectedTile != null)
-            {
-                if (ContainsTile(SelectedTile))
-                    Graphics.DrawHexagon(Layout, SelectedTile.Location, 4, 217, 255);
-                else
-                    UserPile.DrawSelected(this, SelectedTile.Type);
-            }
-
-        }
-
-        private void DrawPiles()
-        {
-            UserPile.Draw();
-            OpponentPile.Draw();
-        }
-
-        public void SetScreenSize(int width, int height)
-        {
-            Graphics.Width = width;
-            Graphics.Height = height;
-
-            ChatWindow.ChangeScreenSize(new HexPoint(width, height));
-            var size = Layout.size == default ? new HexPoint(45, 45) : Layout.size;
-            var origin = Layout.origin == default ? new HexPoint(width / 2, height / 2) : Layout.origin;
-
-            UserPile.ChangeScreenSize(width, height, false);
-            OpponentPile.ChangeScreenSize(width, height, true);
-
-            Layout = new Layout(Layout.flat, size, origin);
         }
 
         public void Move(Tile piece, Tile position)
@@ -113,12 +45,12 @@ namespace HiveOnline.GameAssets
             {
                 tile.RunAddRules(Tiles[tile.GetHashCode()]);
                 Tiles[tile.GetHashCode()] = tile;
-                _renderTilesDirty = true;
+                Version++;
             }
             else
             {
                 Tiles.Add(tile.GetHashCode(), tile);
-                _renderTilesDirty = true;
+                Version++;
             }
         }
 
@@ -153,12 +85,12 @@ namespace HiveOnline.GameAssets
             if (replacementTile != null)
             {
                 Tiles[tile.GetHashCode()] = replacementTile;
-                _renderTilesDirty = true;
+                Version++;
             }
             else
             {
                 Tiles.Remove(tile.GetHashCode());
-                _renderTilesDirty = true;
+                Version++;
             }
         }
     }

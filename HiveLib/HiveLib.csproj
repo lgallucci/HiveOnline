@@ -7,7 +7,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\HiveContracts\HiveContracts.csproj" />
-    <ProjectReference Include="..\HiveGraphics\HiveGraphics.csproj" />
   </ItemGroup>
 
 </Project>

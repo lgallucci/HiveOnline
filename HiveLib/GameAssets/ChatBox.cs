@@ -1,5 +1,4 @@
 ﻿using HiveContracts;
-using HiveGraphics.GameAssetsDraw;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,8 +8,6 @@ namespace HiveLib.GameAssets
 {
     public class ChatBox
     {
-        private ChatBoxGraphics Graphics { get; set; } = new ChatBoxGraphics();
-
         public bool IsOpen { get; set; }
 
         public bool IsTyping { get; set; }
@@ -31,21 +28,5 @@ namespace HiveLib.GameAssets
             TypingText = "";
         }
 
-        public void Draw()
-        {
-            Graphics.Draw(TypingText, IsTyping, ChatMessages.Select(cm => (cm.PlayerName, cm.PlayerTeam, cm.Message)));
-        }
-
-        public void ChangeScreenSize(HexPoint screenSize)
-        {
-            Graphics.ChangeScreenSize(screenSize);
-        }
-
-        public bool Intersects(int x, int y)
-        {
-            if (Graphics.Location.Contains(x, y)) return true;
-            return false;
-        }
     }
-
 }

@@ -1,5 +1,6 @@
 ﻿using HiveClient;
 using HiveContracts;
+using HiveGraphics;
 using HiveLib.Bugs;
 using HiveLib.GameAssets;
 using HiveOnline.GameAssets;
@@ -29,6 +30,8 @@ namespace HiveOnline
         private PlayingState _playingState;
         private bool _testing = false;
         private SimpleAI _ai;
+        private readonly BoardViewState _view;
+        private readonly BoardRenderer _boardRenderer;
         private readonly bool _useAI;
         private readonly HiveGameClient _networkClient;
         private readonly Queue<string> _pendingNetworkMessages = new Queue<string>();
@@ -47,7 +50,10 @@ namespace HiveOnline
             _networkClient = networkClient;
             _useAI = useAi;
             _playerTeam = team;
-            _board = new PlayingBoard(screenWidth, screenHeight);
+            _board = new PlayingBoard();
+            _view = new BoardViewState(screenWidth, screenHeight);
+            _boardRenderer = new BoardRenderer();
+            _boardRenderer.Resize(_view, _board);
             _ai = new SimpleAI(_board);
 
             if (_networkClient != null)
@@ -80,12 +86,13 @@ namespace HiveOnline
         {
             _screenWidth = screenWidth;
             _screenHeight = screenHeight;
-            _board.SetScreenSize(screenWidth, screenHeight);
+            _view.Resize(screenWidth, screenHeight);
+            _boardRenderer.Resize(_view, _board);
         }
 
         public override void Draw(HiveGraphics.GraphicsEngine _graphicsEngine)
         {
-            _board.Draw();
+            _boardRenderer.Draw(_board, _view);
         }
 
         private Hex leftMost, rightMost, topMost, bottomMost;
@@ -104,16 +111,16 @@ namespace HiveOnline
                 KeyboardHelper.HandleRunningKeyboard(_board);
             }
 
-            HexPoint originHexPoint = _board.Layout.origin;
-            HexPoint originalSize = _board.Layout.size;
+            HexPoint originHexPoint = _view.Layout.origin;
+            HexPoint originalSize = _view.Layout.size;
 
-            var fractionalHex = _board.Layout.PixelToHex(new HexPoint(mouseState.X, mouseState.Y));
+            var fractionalHex = _view.Layout.PixelToHex(new HexPoint(mouseState.X, mouseState.Y));
             var clickedHex = fractionalHex.HexRound();
 
             // Allow camera movement after the game ends, but block all piece interaction.
             if (HandleCompletedGame(mouseState, ref originHexPoint, ref originalSize))
             {
-                _board.Layout = new Layout(Layout.flat, originalSize, originHexPoint);
+                _view.SetLayout(originalSize, originHexPoint);
                 return;
             }
 
@@ -124,14 +131,14 @@ namespace HiveOnline
             }
 
             //Enter Layout
-            if (_board.UserPile.Intersects(mouseState.X, mouseState.Y))
+            if (_view.ContainsPile(_board.UserPile, mouseState.X, mouseState.Y, false))
             {
                 if (leftClicked && _playingState == PlayingState.YourTurn)
                 {
                     _board.SelectedTile = null;
                     _board.ClearAvailableTiles();
 
-                    var bug = _board.UserPile.GetIntersectBug(mouseState.X, mouseState.Y);
+                    var bug = _view.GetPileTile(_board.UserPile, mouseState.X, mouseState.Y, false);
 
                     if (bug == null)
                         return;
@@ -151,7 +158,7 @@ namespace HiveOnline
                 }
             }
             //Enter Chat Box
-            else if (_board.ChatWindow.Intersects(mouseState.X, mouseState.Y))
+            else if (_view.ContainsChat(mouseState.X, mouseState.Y))
             {
                 if (leftClicked && !_board.ChatWindow.IsTyping)
                 {
@@ -280,7 +287,7 @@ namespace HiveOnline
                 originalSize = HandleCameraResize(_board, mouseState);
             }
 
-            _board.Layout = new Layout(Layout.flat, originalSize, originHexPoint);
+            _view.SetLayout(originalSize, originHexPoint);
         }
 
         private void ProcessNetworkMessages()
@@ -305,7 +312,7 @@ namespace HiveOnline
         private void HandleCameraInput(MouseState mouseState, ref HexPoint originHexPoint)
         {
             if (mouseState.LeftButton == ButtonState.Pressed && mouseState.X > 0 && mouseState.Y > 0 &&
-                mouseState.X < _board.Graphics.Width && mouseState.Y < _board.Graphics.Height)
+                mouseState.X < _view.ScreenSize.X && mouseState.Y < _view.ScreenSize.Y)
             {
                 Mouse.SetCursor(MouseCursor.Crosshair);
                 draggingCamera = true;
@@ -522,24 +529,24 @@ namespace HiveOnline
             var addedSize = (mouseState.ScrollWheelValue - lastScrollWheelValue) / 20;
             lastScrollWheelValue = mouseState.ScrollWheelValue;
 
-            var newSize = addedSize + board.Layout.size.X;
+            var newSize = addedSize + _view.Layout.size.X;
             if (newSize > 60)
                 newSize = 60;
             if (newSize < 30)
                 newSize = 30;
 
-            var newLayout = new Layout(board.Layout.orientation, new HexPoint(newSize, newSize), board.Layout.origin);
+            var newLayout = new Layout(_view.Layout.orientation, new HexPoint(newSize, newSize), _view.Layout.origin);
 
             var topMostPixel = newLayout.HexToPixel(topMost);
             var bottomMostPixel = newLayout.HexToPixel(bottomMost);
             var leftMostPixel = newLayout.HexToPixel(leftMost);
             var rightMostPixel = newLayout.HexToPixel(rightMost);
 
-            double dragbuffer = board.Layout.size.X;
+            double dragbuffer = _view.Layout.size.X;
 
             if (topMostPixel.Y > _screenHeight - dragbuffer || bottomMostPixel.Y < dragbuffer ||
                 rightMostPixel.X < dragbuffer || leftMostPixel.X > _screenWidth - dragbuffer)
-                return board.Layout.size;
+                return _view.Layout.size;
 
             return new HexPoint(newSize, newSize);
         }
@@ -552,20 +559,20 @@ namespace HiveOnline
             //System.Diagnostics.Debug.WriteLine($"MouseDrag: {lastDragPosition.X}, {lastDragPosition.Y}");
             var mouseDragChange = new HexPoint(-1, -1) * (lastDragPosition - new HexPoint(mouseState.X, mouseState.Y));
 
-            var newLayout = new Layout(board.Layout.orientation, board.Layout.size, board.Layout.origin + mouseDragChange);
+            var newLayout = new Layout(_view.Layout.orientation, _view.Layout.size, _view.Layout.origin + mouseDragChange);
 
             var topMostPixel = newLayout.HexToPixel(topMost);
             var bottomMostPixel = newLayout.HexToPixel(bottomMost);
             var leftMostPixel = newLayout.HexToPixel(leftMost);
             var rightMostPixel = newLayout.HexToPixel(rightMost);
 
-            double dragbuffer = board.Layout.size.X;
+            double dragbuffer = _view.Layout.size.X;
 
             if (topMostPixel.Y > _screenHeight - dragbuffer || bottomMostPixel.Y < dragbuffer ||
                 rightMostPixel.X < dragbuffer || leftMostPixel.X > _screenWidth - dragbuffer)
-                return board.Layout.origin;
+                return _view.Layout.origin;
 
-            return board.Layout.origin + mouseDragChange;
+            return _view.Layout.origin + mouseDragChange;
         }
 
 
