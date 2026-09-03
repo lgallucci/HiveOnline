@@ -3,6 +3,7 @@ using HiveContracts;
 using HiveLib.Bugs;
 using HiveLib.GameAssets;
 using HiveOnline.GameAssets;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
@@ -88,8 +89,14 @@ namespace HiveOnline
         }
 
         private Hex leftMost, rightMost, topMost, bottomMost;
-        public override void Update(ref GameState _gameState)
+        public override void Update(GameTime gameTime, ref GameState _gameState)
         {
+            KeyboardHelper.Update();
+            var mouseState = Mouse.GetState();
+            var leftClicked = _previousMouseState.LeftButton == ButtonState.Released && mouseState.LeftButton == ButtonState.Pressed;
+            var rightClicked = _previousMouseState.RightButton == ButtonState.Released && mouseState.RightButton == ButtonState.Pressed;
+            _previousMouseState = mouseState;
+
             ProcessNetworkMessages();
 
             if (_board.ChatWindow.IsTyping)
@@ -100,7 +107,6 @@ namespace HiveOnline
             HexPoint originHexPoint = _board.Layout.origin;
             HexPoint originalSize = _board.Layout.size;
 
-            var mouseState = Mouse.GetState();
             var fractionalHex = _board.Layout.PixelToHex(new HexPoint(mouseState.X, mouseState.Y));
             var clickedHex = fractionalHex.HexRound();
 
@@ -112,7 +118,7 @@ namespace HiveOnline
             }
 
             // Handle AI opponent turn
-            if (HandleAiTurn())
+            if (HandleAiTurn(gameTime))
             {
                 return; // Don't process player input during AI turn
             }
@@ -120,7 +126,7 @@ namespace HiveOnline
             //Enter Layout
             if (_board.UserPile.Intersects(mouseState.X, mouseState.Y))
             {
-                if (MouseLeftClickedOnce(mouseState.LeftButton) && _playingState == PlayingState.YourTurn)
+                if (leftClicked && _playingState == PlayingState.YourTurn)
                 {
                     _board.SelectedTile = null;
                     _board.ClearAvailableTiles();
@@ -147,7 +153,7 @@ namespace HiveOnline
             //Enter Chat Box
             else if (_board.ChatWindow.Intersects(mouseState.X, mouseState.Y))
             {
-                if (MouseLeftClickedOnce(mouseState.LeftButton) && !_board.ChatWindow.IsTyping)
+                if (leftClicked && !_board.ChatWindow.IsTyping)
                 {
                     _board.ChatWindow.TypingText = "";
                     _board.ChatWindow.IsTyping = true;
@@ -155,7 +161,7 @@ namespace HiveOnline
             }
             else if (!draggingCamera && _playingState == PlayingState.YourTurn && _board.AvailableTiles.ContainsKey(clickedHex.GetHashCode()))
             {
-                if (MouseLeftClickedOnce(mouseState.LeftButton))
+                if (leftClicked)
                 {
                     //Get Selected Tile (from board or pile?)
                     var selectedTile = _board.SelectedTile;
@@ -225,7 +231,7 @@ namespace HiveOnline
             //Enter Hex on Board
             else if (!draggingCamera && _playingState == PlayingState.YourTurn && _board.ContainsTile(clickedHex))
             {
-                if (MouseLeftClickedOnce(mouseState.LeftButton))
+                if (leftClicked)
                 {
                     var tile = _board.Tiles[clickedHex.GetHashCode()];
 
@@ -258,7 +264,7 @@ namespace HiveOnline
                         _board.ClearAvailableTiles();
                     }
                 }
-                else if (MouseRightClickedOnce(mouseState.RightButton))
+                else if (rightClicked)
                 {
                     var tile = _board.Tiles[clickedHex.GetHashCode()];
                     tile.IsInspecting = !tile.IsInspecting;
@@ -317,12 +323,12 @@ namespace HiveOnline
             }
         }
 
-        private bool HandleAiTurn()
+        private bool HandleAiTurn(GameTime gameTime)
         {
             if (!_useAI || _playingState != PlayingState.OpponentsTurn)
                 return false;
 
-            if (_ai.MakeMove(_opponentTurnCount, _opponentQueenPlaced))
+            if (_ai.MakeMove(gameTime.ElapsedGameTime.TotalSeconds, _opponentTurnCount, _opponentQueenPlaced))
             {
                 if (!_opponentQueenPlaced && _board.Tiles.Values.Any(t => t.Team == BugTeam.Dark && t.Type == BugType.QueenBee))
                     _opponentQueenPlaced = true;
@@ -509,20 +515,7 @@ namespace HiveOnline
             }
         }
 
-        private ButtonState _leftButtonPreviousState;
-        private bool MouseLeftClickedOnce(ButtonState leftButton)
-        {
-            var clicked = _leftButtonPreviousState == ButtonState.Released && leftButton == ButtonState.Pressed;
-            _leftButtonPreviousState = leftButton;
-            return clicked;
-        }
-        private ButtonState _rightButtonPreviousState;
-        private bool MouseRightClickedOnce(ButtonState rightButton)
-        {
-            var clicked = _rightButtonPreviousState == ButtonState.Released && rightButton == ButtonState.Pressed;
-            _rightButtonPreviousState = rightButton;
-            return clicked;
-        }
+        private MouseState _previousMouseState;
 
         private HexPoint HandleCameraResize(PlayingBoard board, MouseState mouseState)
         {

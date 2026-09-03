@@ -1,5 +1,6 @@
 ﻿using HiveContracts;
 using HiveOnline.GameAssets;
+using Microsoft.Xna.Framework;
 using System;
 
 namespace HiveOnline
@@ -7,7 +8,7 @@ namespace HiveOnline
 
     public abstract class GameEngine
     {
-        public abstract void Update(ref GameState _gameState);
+        public abstract void Update(GameTime gameTime, ref GameState _gameState);
 
         public abstract void SetScreenSize(int screenWidth, int screenHeight);
 

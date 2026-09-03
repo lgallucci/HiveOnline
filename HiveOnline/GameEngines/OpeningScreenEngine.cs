@@ -1,6 +1,7 @@
 ﻿using HiveContracts;
 using HiveGraphics;
 using HiveOnline.GameAssets;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
@@ -20,7 +21,7 @@ namespace HiveOnline.GameEngines
             
         }
 
-        public override void Update(ref GameState _gameState)
+        public override void Update(GameTime gameTime, ref GameState _gameState)
         {
             var mouseState = Mouse.GetState();
 

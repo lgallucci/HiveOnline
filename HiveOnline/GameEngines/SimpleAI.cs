@@ -19,9 +19,9 @@ namespace HiveOnline
             _board = board;
         }
 
-        public bool MakeMove(int turnCount, bool queenPlaced)
+        public bool MakeMove(double elapsedSeconds, int turnCount, bool queenPlaced)
         {
-            _thinkTime += 0.016; // Approximate 60 FPS delta time
+            _thinkTime += elapsedSeconds;
 
             if (_thinkTime < THINK_DURATION)
                 return false; // Still thinking, haven't made a move yet

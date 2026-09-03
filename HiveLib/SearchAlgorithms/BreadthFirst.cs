@@ -19,8 +19,6 @@
             {
                 var current = frontier.Dequeue();
 
-                Console.WriteLine("Visiting {0}", current);
-
                 for(int i = 0; i < 6; i++)
                 {
                     var neighbor = current.Location.Neighbor(i);

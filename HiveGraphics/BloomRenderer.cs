@@ -10,12 +10,16 @@ namespace HiveGraphics
         private GraphicsDevice _device;
         private RenderTarget2D _sourceRenderTarget;
         private SpriteBatch _spriteBatch;
+        private int _width;
+        private int _height;
 
         public BloomFilter Filter { get; } = new BloomFilter();
 
         public void Load(GraphicsDevice device, ContentManager content, int width, int height)
         {
             _device = device;
+            _width = width;
+            _height = height;
             _spriteBatch = new SpriteBatch(device);
             Filter.Load(device, content, width, height, SurfaceFormat.Color);
             Filter.BloomPreset = BloomFilter.BloomPresets.Small;
@@ -29,9 +33,11 @@ namespace HiveGraphics
                 return;
             }
 
+            _width = width;
+            _height = height;
             _sourceRenderTarget?.Dispose();
             _sourceRenderTarget = new RenderTarget2D(_device, width, height, false,
-                SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
+                SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.DiscardContents);
         }
 
         public void Begin()
@@ -41,6 +47,9 @@ namespace HiveGraphics
 
         public Texture2D Render()
         {
+            if (_sprites.Count == 0)
+                return null;
+
             _device.SetRenderTarget(_sourceRenderTarget);
             _device.Clear(Color.Transparent);
             _spriteBatch.Begin();
@@ -59,7 +68,7 @@ namespace HiveGraphics
             }
             _spriteBatch.End();
 
-            return Filter.Draw(_sourceRenderTarget, _sourceRenderTarget.Width, _sourceRenderTarget.Height);
+            return Filter.Draw(_sourceRenderTarget, Math.Max(1, _width / 2), Math.Max(1, _height / 2));
         }
 
         public void Draw(Texture2D texture, Vector2 position, Color color,

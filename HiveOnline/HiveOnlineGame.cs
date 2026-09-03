@@ -109,7 +109,7 @@ namespace HiveOnline
             if (IsActive)
             {
                 GameState _previousState = _gameState;
-                _gameEngine.Update(ref _gameState);
+                _gameEngine.Update(gameTime, ref _gameState);
 
                 if (_gameMode != GameMode.Multiplayer && _gameState == GameState.OpeningScreen && _previousState == GameState.OpeningScreen)
                 {
@@ -144,9 +144,9 @@ namespace HiveOnline
 
             //_graphicsEngine.DrawFps(framesPerSecond);
 
-            CalculateFps(gameTime);
-
             _graphicsEngine.EndSprites();
+
+            CalculateFps(gameTime);
 
             base.Draw(gameTime);
         }

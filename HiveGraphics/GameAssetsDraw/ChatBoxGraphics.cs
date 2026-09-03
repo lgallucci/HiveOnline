@@ -15,6 +15,8 @@ public class ChatBoxGraphics : DrawableObject
         Location = new Rectangle((int)ScreenSize.X - _textBoxWidth, (int)ScreenSize.Y - _textBoxHeight, _textBoxWidth - 5, _textBoxHeight - 5);
     }
 
+    private readonly Dictionary<string, ChatLayout> _layoutCache = new Dictionary<string, ChatLayout>();
+
     public void Draw(string typingText, bool isTyping, IEnumerable<(string, int, string)> messages)
     {
         //DRAW BOX
@@ -48,16 +50,20 @@ public class ChatBoxGraphics : DrawableObject
 
     public int DrawChatText(DynamicSpriteFont font, string playerName, int playerTeam, string message, int textHeight, float lineHeight)
     {
-        var nameOffset = font.MeasureString(playerName).X;
+        var cacheKey = $"{playerName}\0{playerTeam}\0{message}\0{Location.Width}";
+        if (!_layoutCache.TryGetValue(cacheKey, out var layout))
+        {
+            var nameOffset = font.MeasureString(playerName).X;
+            var wrappedText = WrapText(font, $": {message}", _textBoxWidth - nameOffset - 5);
+            layout = new ChatLayout(nameOffset, wrappedText, font.MeasureString(wrappedText).Y);
+            _layoutCache[cacheKey] = layout;
+        }
 
-        var chatText = $": {message}";
-        var wrappedText = WrapText(font, chatText, _textBoxWidth - nameOffset - 5);
-
-        textHeight += (int)font.MeasureString(wrappedText).Y;
+        textHeight += (int)layout.Height;
 
         GraphicsEngine.SpriteBatch.DrawString(font, playerName, new Vector2(Location.Left + _textBuffer, lineHeight - textHeight - 5), GetPlayerColor(playerTeam));
 
-        GraphicsEngine.SpriteBatch.DrawString(font, wrappedText, new Vector2(Location.Left + _textBuffer + font.MeasureString(playerName).X, lineHeight - textHeight - 5), Color.MintCream);
+        GraphicsEngine.SpriteBatch.DrawString(font, layout.WrappedText, new Vector2(Location.Left + _textBuffer + layout.NameWidth, lineHeight - textHeight - 5), Color.MintCream);
 
         return textHeight;
     }
@@ -93,5 +99,19 @@ public class ChatBoxGraphics : DrawableObject
         }
 
         return sb.ToString();
+    }
+
+    private readonly struct ChatLayout
+    {
+        public ChatLayout(float nameWidth, string wrappedText, float height)
+        {
+            NameWidth = nameWidth;
+            WrappedText = wrappedText;
+            Height = height;
+        }
+
+        public float NameWidth { get; }
+        public string WrappedText { get; }
+        public float Height { get; }
     }
 }

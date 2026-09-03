@@ -302,6 +302,7 @@ namespace HiveOnline.GameAssets
         public List<Hex> CalculateAvailable(PlayingBoard board, BugTeam team = BugTeam.Light)
         {
             var availableTiles = new List<Hex>();
+            var availableKeys = new HashSet<int>();
 
             if (board.Tiles.Count == 0)
             {
@@ -310,16 +311,16 @@ namespace HiveOnline.GameAssets
             }
 
             var hasTeamTile = board.Tiles.Values.Any(t => t.Team == team);
-            var anchorTiles = hasTeamTile
-                ? board.Tiles.Values.Where(t => t.Team == team).ToList()
-                : board.Tiles.Values.ToList();
 
-            foreach (var tile in anchorTiles)
+            foreach (var tile in board.Tiles.Values)
             {
+                if (hasTeamTile && tile.Team != team)
+                    continue;
+
                 for (int i = 0; i < 6; i++)
                 {
                     var candidate = tile.Location.Neighbor(i);
-                    if (board.Tiles.ContainsKey(candidate.GetHashCode()) || availableTiles.Contains(candidate))
+                    if (board.Tiles.ContainsKey(candidate.GetHashCode()) || !availableKeys.Add(candidate.GetHashCode()))
                         continue;
 
                     if (!hasTeamTile)

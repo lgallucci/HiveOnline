@@ -4,7 +4,6 @@ using HiveLib.GameAssets;
 using HiveLib.SearchAlgorithms;
 using HiveGraphics.GameAssetsDraw;
 using System.Collections.Generic;
-using System.Linq;
 using System;
 
 namespace HiveOnline.GameAssets
@@ -17,6 +16,8 @@ namespace HiveOnline.GameAssets
         public ITile SelectedTile { get; set; }
         public Dictionary<int, ITile> Tiles { get; set; } = new Dictionary<int, ITile>();
         public Dictionary<int, Hex> AvailableTiles { get; set; } = new Dictionary<int, Hex>();
+        private readonly List<ITile> _renderTiles = new List<ITile>();
+        private bool _renderTilesDirty = true;
 
         public string UserName { get; set; } = "TestUser";
         public Pile UserPile { get; set; }
@@ -41,10 +42,21 @@ namespace HiveOnline.GameAssets
             Graphics.Draw(UserName, OpponentName, CurrentTurn);
 
             //Draw Grid
-            foreach (var tile in Tiles.OrderBy(kvp => kvp.Value.Type))
+            if (_renderTilesDirty)
             {
-                tile.Value.Draw(this);
+                _renderTiles.Clear();
+                _renderTiles.AddRange(Tiles.Values);
+                _renderTiles.Sort((left, right) => left.Type.CompareTo(right.Type));
+                _renderTilesDirty = false;
             }
+
+            foreach (var tile in _renderTiles)
+            {
+                tile.Draw(this);
+            }
+
+            foreach (var testSpot in TestSpots)
+                Graphics.DrawHexagon(Layout, testSpot.Value, 255, 247, 0);
 
             foreach (var tile in AvailableTiles)
             {
@@ -101,9 +113,13 @@ namespace HiveOnline.GameAssets
             {
                 tile.RunAddRules(Tiles[tile.GetHashCode()]);
                 Tiles[tile.GetHashCode()] = tile;
+                _renderTilesDirty = true;
             }
             else
+            {
                 Tiles.Add(tile.GetHashCode(), tile);
+                _renderTilesDirty = true;
+            }
         }
 
         public bool ContainsTile(ITile tile)
@@ -135,9 +151,15 @@ namespace HiveOnline.GameAssets
             var replacementTile = tile.RunRemoveRules();
 
             if (replacementTile != null)
+            {
                 Tiles[tile.GetHashCode()] = replacementTile;
+                _renderTilesDirty = true;
+            }
             else
+            {
                 Tiles.Remove(tile.GetHashCode());
+                _renderTilesDirty = true;
+            }
         }
     }
 }

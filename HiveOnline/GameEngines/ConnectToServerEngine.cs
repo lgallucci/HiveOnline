@@ -1,5 +1,6 @@
 ﻿using HiveContracts;
 using HiveOnline.GameAssets;
+using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -18,7 +19,7 @@ namespace HiveOnline.GameEngines
             throw new NotImplementedException();
         }
 
-        public override void Update(ref GameState _gameState)
+        public override void Update(GameTime gameTime, ref GameState _gameState)
         {
             throw new NotImplementedException();
         }

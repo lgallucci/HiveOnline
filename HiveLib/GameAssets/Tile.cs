@@ -24,13 +24,6 @@ namespace HiveOnline.GameAssets
             var location = board.Layout.HexToPixel(Location);
             Graphics.Draw(Type, Team, location, board.Layout.size * 2);
             //Graphics.DrawCoordinates(board.Layout, Location);
-
-            var boardGraphics = new BoardGraphics();
-            foreach (var testSpot in board.TestSpots)
-            {
-                boardGraphics.DrawHexagon(board.Layout, testSpot.Value, 255, 247, 0);
-                //boardGraphics.DrawText(board.Layout, testSpot.Value, $"{testSpot.Key.ToString()}: {testSpot.Value.q}, {testSpot.Value.r}, {testSpot.Value.s}", 255, 247, 0);
-            }
         }
 
         public virtual void Draw(HexPoint location, HexPoint size)

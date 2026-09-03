@@ -20,10 +20,14 @@ internal class KeyboardHelper
         return _currentKeyState.IsKeyDown(key) && !_previousKeyState.IsKeyDown(key);
     }
 
+    internal static void Update()
+    {
+        _previousKeyState = _currentKeyState;
+        _currentKeyState = Keyboard.GetState();
+    }
+
     internal static void HandleRunningKeyboard(PlayingBoard board)
     {
-        _currentKeyState = Keyboard.GetState();
-
         if (IsKeyPressed(Keys.Enter, true))
         {
             if (!string.IsNullOrWhiteSpace(board.ChatWindow.TypingText))
@@ -55,7 +59,6 @@ internal class KeyboardHelper
                 board.ChatWindow.TypingText += input;
         }
 
-        _previousKeyState = _currentKeyState;
     }
 
     /// <summary>

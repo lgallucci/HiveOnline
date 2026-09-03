@@ -69,15 +69,16 @@ namespace HiveGraphics
             var bloomTexture = BloomRenderer.Render();
 
             Device.SetRenderTarget(null);
-            Device.Clear(Color.Transparent);
-
             SpriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque);
             SpriteBatch.Draw(_sceneRenderTarget, Vector2.Zero, Color.White);
             SpriteBatch.End();
 
-            SpriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Additive);
-            SpriteBatch.Draw(bloomTexture, Vector2.Zero, Color.White);
-            SpriteBatch.End();
+            if (bloomTexture != null)
+            {
+                SpriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Additive);
+                SpriteBatch.Draw(bloomTexture, new Rectangle(0, 0, ScreenSize.X, ScreenSize.Y), Color.White);
+                SpriteBatch.End();
+            }
         }
 
         public void DrawString(string text)
@@ -95,7 +96,7 @@ namespace HiveGraphics
         private RenderTarget2D CreateSceneRenderTarget()
         {
             return new RenderTarget2D(Device, ScreenSize.X, ScreenSize.Y, false,
-                SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
+                SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.DiscardContents);
         }
 
         public static void DrawBloom(Texture2D texture, Vector2 position, Color color,
