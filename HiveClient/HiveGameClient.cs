@@ -1,10 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Unclassified.Net;
+using HiveNetworking;
 
 namespace HiveClient
 {
@@ -12,8 +12,8 @@ namespace HiveClient
     {
         private readonly string _address;
         private readonly int _port;
-        private readonly Queue<string> _receivedMessages = new Queue<string>();
         private AsyncTcpClient _tcpClient;
+        private readonly LineMessageFramer _messageFramer = new LineMessageFramer();
         private bool disposedValue;
 
         public event Action<string> MessageReceived;
@@ -39,45 +39,30 @@ namespace HiveClient
                 ReceivedCallback = ClientReceived
             };
 
+            using var cancellationRegistration = cancellationToken.Register(() =>
+            {
+                _tcpClient.AutoReconnect = false;
+                _tcpClient.Disconnect();
+            });
+
             await _tcpClient.RunAsync();
         }
 
         private Task ClientReceived(AsyncTcpClient client, int length)
         {
             var buffer = client.ByteBuffer.Dequeue(length);
-            var message = Encoding.UTF8.GetString(buffer, 0, length).Trim();
-
-            if (!string.IsNullOrWhiteSpace(message))
+            foreach (var message in _messageFramer.Append(buffer))
             {
-                lock (_receivedMessages)
-                {
-                    _receivedMessages.Enqueue(message);
-                }
+                Console.WriteLine($"Client Received: {message}");
+                MessageReceived?.Invoke(message);
             }
-
-            Console.WriteLine($"Client Received: {message}");
-            MessageReceived?.Invoke(message);
 
             return Task.CompletedTask;
         }
 
-        public bool TryDequeueMessage(out string message)
-        {
-            lock (_receivedMessages)
-            {
-                if (_receivedMessages.Count > 0)
-                {
-                    message = _receivedMessages.Dequeue();
-                    return true;
-                }
-            }
-
-            message = string.Empty;
-            return false;
-        }
-
         private async Task ClientConnected(AsyncTcpClient client, bool isReconnect)
         {
+            _messageFramer.Reset();
             Console.WriteLine($"Connected! {(isReconnect ? "isReconnect" : "")}");
             await SendMessage("HELLO");
         }

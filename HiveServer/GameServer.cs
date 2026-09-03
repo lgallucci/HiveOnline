@@ -91,31 +91,39 @@ namespace HiveServer
         {
             ConnectedHiveClient playerOne = null;
             ConnectedHiveClient playerTwo = null;
+            HiveGame game = null;
+            var alreadyQueued = false;
+            var alreadyInGame = false;
 
             lock (_syncRoot)
             {
-                _waitingQueue.Enqueue(client);
+                alreadyInGame = client.CurrentGame != null;
+                alreadyQueued = !alreadyInGame && _waitingQueue.Contains(client);
 
-                if (_waitingQueue.Count >= 2)
+                if (!alreadyInGame && !alreadyQueued)
+                    _waitingQueue.Enqueue(client);
+
+                if (!alreadyInGame && !alreadyQueued && _waitingQueue.Count >= 2)
                 {
                     playerOne = _waitingQueue.Dequeue();
                     playerTwo = _waitingQueue.Dequeue();
+                    game = new HiveGame(playerOne, playerTwo);
+                    playerOne.CurrentGame = game;
+                    playerTwo.CurrentGame = game;
+                    _games.Add(game);
                 }
+            }
+
+            if (alreadyInGame || alreadyQueued)
+            {
+                await client.SendMessage(alreadyInGame ? "ERROR ALREADY_IN_GAME" : "ERROR ALREADY_WAITING");
+                return;
             }
 
             if (playerOne == null || playerTwo == null)
             {
                 await client.SendMessage("WAITING_FOR_OPPONENT");
                 return;
-            }
-
-            var game = new HiveGame(playerOne, playerTwo);
-            playerOne.CurrentGame = game;
-            playerTwo.CurrentGame = game;
-
-            lock (_syncRoot)
-            {
-                _games.Add(game);
             }
 
             await playerOne.SendMessage($"MATCHED {playerOne.Identifier} {playerTwo.Identifier}");
@@ -128,19 +136,27 @@ namespace HiveServer
 
         private async Task RouteMove(ConnectedHiveClient client, string message)
         {
-            if (client.CurrentGame == null)
+            ConnectedHiveClient opponent = null;
+            lock (_syncRoot)
+            {
+                var game = client.CurrentGame;
+                if (game != null)
+                    opponent = game.GetOpponent(client);
+            }
+
+            if (opponent == null)
             {
                 await client.SendMessage("ERROR NOT_IN_GAME");
                 return;
             }
 
-            var opponent = client.CurrentGame.GetOpponent(client);
             await opponent.SendMessage(message);
         }
 
         private void ClientClosed(ConnectedHiveClient tcpClient, bool closedByRemote)
         {
             Console.WriteLine($"Removing Client {tcpClient.Identifier}! {(closedByRemote ? "closedByRemote" : "")}");
+            ConnectedHiveClient opponent = null;
 
             lock (_syncRoot)
             {
@@ -158,7 +174,19 @@ namespace HiveServer
                     while (remaining.Count > 0)
                         _waitingQueue.Enqueue(remaining.Dequeue());
                 }
+
+                if (tcpClient.CurrentGame != null)
+                {
+                    var game = tcpClient.CurrentGame;
+                    opponent = game.GetOpponent(tcpClient);
+                    _games.Remove(game);
+                    tcpClient.CurrentGame = null;
+                    opponent.CurrentGame = null;
+                }
             }
+
+            if (opponent != null)
+                _ = opponent.SendMessage("OPPONENT_DISCONNECTED");
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
@@ -171,12 +199,29 @@ namespace HiveServer
             };
 
             Console.WriteLine($"Hive server listening on port {_port}");
+            using var cancellationRegistration = cancellationToken.Register(() =>
+            {
+                try
+                {
+                    _listener?.Stop(true);
+                }
+                catch (InvalidOperationException)
+                {
+                }
+            });
+
             await _listener.RunAsync();
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            _listener?.Stop(true);
+            try
+            {
+                _listener?.Stop(true);
+            }
+            catch (InvalidOperationException)
+            {
+            }
             return Task.CompletedTask;
         }
     }

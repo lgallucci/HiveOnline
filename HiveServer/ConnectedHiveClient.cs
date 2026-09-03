@@ -3,18 +3,20 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using Unclassified.Net;
+using HiveNetworking;
 
 namespace HiveServer
 {
     internal class ConnectedHiveClient
     {
-        public Action<ConnectedHiveClient, bool> Disconnected;
-        public Func<ConnectedHiveClient, string, Task> MessageReceived;
+        public Action<ConnectedHiveClient, bool>? Disconnected;
+        public Func<ConnectedHiveClient, string, Task>? MessageReceived;
 
         private readonly AsyncTcpClient tcpClient;
+        private readonly LineMessageFramer messageFramer = new LineMessageFramer();
 
         public Guid Identifier { get; }
-        public HiveGame CurrentGame { get; set; }
+        public HiveGame? CurrentGame { get; set; }
 
         public string RemoteEndpoint => tcpClient?.ServerTcpClient?.Client?.RemoteEndPoint?.ToString() ?? "unknown";
 
@@ -38,21 +40,14 @@ namespace HiveServer
         private async Task MessageReceivedAsync(AsyncTcpClient client, int count)
         {
             var bytes = client.ByteBuffer.Dequeue(count);
-            var message = Encoding.UTF8.GetString(bytes, 0, bytes.Length).Trim();
-
-            if (string.IsNullOrWhiteSpace(message))
-                return;
-
-            Console.WriteLine($"Server client {Identifier}: received: {message}");
-
-            if (MessageReceived != null)
+            foreach (var message in messageFramer.Append(bytes))
             {
-                await MessageReceived(this, message);
-            }
+                Console.WriteLine($"Server client {Identifier}: received: {message}");
+                if (MessageReceived != null)
+                    await MessageReceived(this, message);
 
-            if (message.Equals("bye", StringComparison.OrdinalIgnoreCase))
-            {
-                client.Disconnect();
+                if (message.Equals("bye", StringComparison.OrdinalIgnoreCase))
+                    client.Disconnect();
             }
         }
 

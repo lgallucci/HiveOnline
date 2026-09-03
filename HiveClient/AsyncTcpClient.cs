@@ -29,9 +29,10 @@ namespace Unclassified.Net
 
 		private TcpClient tcpClient;
 		private NetworkStream stream;
+		private readonly SemaphoreSlim sendLock = new SemaphoreSlim(1, 1);
 		private TaskCompletionSource<bool> closedTcs = new TaskCompletionSource<bool>();
 
-		public bool IsConnected { get { return tcpClient.Connected; } }
+		public bool IsConnected { get { return tcpClient?.Connected == true; } }
 		#endregion Private data
 
 		#region Constructors
@@ -269,7 +270,8 @@ namespace Unclassified.Net
 		/// </summary>
 		public void Disconnect()
 		{
-			tcpClient.Client.Disconnect(false);
+			if (tcpClient?.Client != null)
+				tcpClient.Client.Disconnect(false);
 		}
 
 		/// <summary>
@@ -301,10 +303,17 @@ namespace Unclassified.Net
 		/// <returns>The task object representing the asynchronous operation.</returns>
 		public async Task Send(ArraySegment<byte> data)
 		{
-			if (tcpClient.Client.Connected)
+			await sendLock.WaitAsync();
+			try
 			{
-				await stream.WriteAsync(data.Array, data.Offset, data.Count);
+				if (tcpClient?.Client?.Connected == true && stream != null)
+					await stream.WriteAsync(data.Array, data.Offset, data.Count);
 			}
+			finally
+			{
+				sendLock.Release();
+			}
+			sendLock.Dispose();
 		}
 
 		#endregion Public methods
