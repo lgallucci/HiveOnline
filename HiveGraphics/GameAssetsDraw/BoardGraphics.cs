@@ -22,7 +22,7 @@ public class BoardGraphics : DrawableObject
         if (!string.IsNullOrEmpty(currentTurn))
         {
             GraphicsEngine.SpriteBatch.DrawString(Art.NameFont, currentTurn,
-                new Vector2((float)Width / 2 - turnSize.X / 2, 10), Color.Yellow);
+                new Vector2(10, 10), Color.Yellow);
         }
     }
 
@@ -41,7 +41,7 @@ public class BoardGraphics : DrawableObject
             {
                 var color = new Color(colorR, colorG, colorB);
                 GraphicsEngine.SpriteBatch.DrawLine(Art.Pixel, corner.ToVector2(), previousPoint.Value.ToVector2(), color, 4f);
-                GraphicsEngine.QueueBloomLine(Art.Pixel, corner.ToVector2(), previousPoint.Value.ToVector2(), color, 4f);
+                GraphicsEngine.DrawBloomLine(Art.Pixel, corner.ToVector2(), previousPoint.Value.ToVector2(), color, 4f);
             }
             else
             {
@@ -53,7 +53,7 @@ public class BoardGraphics : DrawableObject
 
         var outlineColor = new Color(colorR, colorG, colorB);
         GraphicsEngine.SpriteBatch.DrawLine(Art.Pixel, firstPoint.ToVector2(), previousPoint.Value.ToVector2(), outlineColor, 4f);
-        GraphicsEngine.QueueBloomLine(Art.Pixel, firstPoint.ToVector2(), previousPoint.Value.ToVector2(), outlineColor, 4f);
+        GraphicsEngine.DrawBloomLine(Art.Pixel, firstPoint.ToVector2(), previousPoint.Value.ToVector2(), outlineColor, 4f);
     }
 
     public void DrawText(Layout layout, Hex location, string text, int colorR, int colorG, int colorB)

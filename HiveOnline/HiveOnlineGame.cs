@@ -29,8 +29,8 @@ namespace HiveOnline
         private GraphicsEngine _graphicsEngine;
         private GameEngine _gameEngine;
         private GameState _gameState;
-        int _screenWidth = 1600;
-        int _screenHeight = 900;
+        int _screenWidth = 1200;
+        int _screenHeight = 800;
 
         int framesPerSecond = 0;
         int frameCount = 0;
@@ -146,7 +146,7 @@ namespace HiveOnline
 
             _gameEngine.Draw(_graphicsEngine);
 
-            _graphicsEngine.DrawFps(framesPerSecond);
+            //_graphicsEngine.DrawFps(framesPerSecond);
 
             CalculateFps(gameTime);
 

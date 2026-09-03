@@ -172,7 +172,17 @@ namespace HiveOnline
 
                     var bug = _board.UserPile.GetIntersectBug(mouseState.X, mouseState.Y);
 
-                    if (bug != null && bug.Team == _playerTeam)
+                    if (bug == null)
+                        return;
+
+                    // Check if Queen must be placed this turn
+                    if (MustPlayQueen(bug))
+                    {
+                        // Can only place Queen
+                        return;
+                    }
+
+                    if (bug.Team == _playerTeam)
                     {
                         _board.SelectedTile = bug;
                         _board.AddAvailableHexes(_board.UserPile.CalculateAvailable(_board));
@@ -198,10 +208,8 @@ namespace HiveOnline
                     if (selectedTile != null)
                     {
                         bool isNewPlacement = !_board.ContainsTile(selectedTile);
-                        
-                        // Check if Queen must be placed this turn
-                        if (_playerTurnCount >= 3 && !_playerQueenPlaced && 
-                            isNewPlacement && selectedTile.Type != BugType.QueenBee)
+
+                        if (isNewPlacement && MustPlayQueen(selectedTile))
                         {
                             // Can only place Queen
                             return;
@@ -271,6 +279,19 @@ namespace HiveOnline
                         //Set Selected
                         _board.SelectedTile = tile;
 
+                        // Check if Queen must be placed this turn
+                        if (MustPlayQueen(tile))
+                        {
+                            // Can only place Queen
+                            return;
+                        }
+
+                        // Prevent movement until Queen is placed
+                        if (!CanMoveAnyPiece(BugTeam.Light))
+                        {
+                            return; // Can't move until Queen is placed
+                        }
+
                         //Calculate and set Available 
                         _board.ClearAvailableTiles();
                         var available = tile.CalculateAvailable(_board);
@@ -318,9 +339,18 @@ namespace HiveOnline
             }
 
             _board.Layout = new Layout(Layout.flat, originalSize, originHexPoint);
+        }
 
-
-            //TODO: Update game state
+        private bool MustPlayQueen(ITile tile)
+        {
+            // Check if Queen must be placed this turn
+            if (_playerTurnCount >= 3 && !_playerQueenPlaced && 
+                tile.Type != BugType.QueenBee)
+            {
+                // Can only place Queen
+                return true;
+            }
+            return false;
         }
 
         private void ProcessIncomingNetworkMessage(string message)
