@@ -3,7 +3,6 @@ using HiveLib.Bugs;
 using HiveLib.GameAssets;
 using HiveOnline.GameAssets;
 using HiveGraphics.GameAssetsDraw;
-using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
 
@@ -22,6 +21,8 @@ public sealed class BoardRenderer
 
     public void Resize(BoardViewState view, PlayingBoard board)
     {
+        _boardGraphics.Width = view.ScreenSize.X;
+        _boardGraphics.Height = view.ScreenSize.Y;
         _chatGraphics.ChangeScreenSize(new HexPoint(view.ScreenSize.X, view.ScreenSize.Y));
         var userBounds = view.GetPileBounds(board.UserPile, false);
         var opponentBounds = view.GetPileBounds(board.OpponentPile, true);
