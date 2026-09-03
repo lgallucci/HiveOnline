@@ -7,8 +7,6 @@ public class TileGraphics : DrawableObject
     public void Draw(BugType bugType, BugTeam team, HexPoint location, HexPoint tileSize)
     {
         var texture = GetTexture(bugType, team);
-
-        //TODO: Draw beetles and children slightly offset
         
         GraphicsEngine.SpriteBatch.Draw(
             texture,

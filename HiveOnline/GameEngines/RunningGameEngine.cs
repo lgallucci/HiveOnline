@@ -90,10 +90,7 @@ namespace HiveOnline
         private Hex leftMost, rightMost, topMost, bottomMost;
         public override void Update(ref GameState _gameState)
         {
-            while (_networkClient != null && _networkClient.IsConnected && _networkClient.TryDequeueMessage(out var message))
-            {
-                ProcessIncomingNetworkMessage(message);
-            }
+            ProcessNetworkMessages();
 
             if (_board.ChatWindow.IsTyping)
             {
@@ -108,57 +105,15 @@ namespace HiveOnline
             var clickedHex = fractionalHex.HexRound();
 
             // Allow camera movement after the game ends, but block all piece interaction.
-            if (_playingState == PlayingState.Won || _playingState == PlayingState.Lost)
+            if (HandleCompletedGame(mouseState, ref originHexPoint, ref originalSize))
             {
-                if (mouseState.LeftButton == ButtonState.Pressed)
-                {
-                    if (mouseState.X > 0 && mouseState.Y > 0 && mouseState.X < _board.Graphics.Width && mouseState.Y < _board.Graphics.Height)
-                    {
-                        Mouse.SetCursor(MouseCursor.Crosshair);
-                        draggingCamera = true;
-                        if (lastDragPosition == default(HexPoint))
-                            lastDragPosition = new HexPoint(mouseState.X, mouseState.Y);
-
-                        originHexPoint = HandleCameraDrag(_board, mouseState);
-                        lastDragPosition = new HexPoint(mouseState.X, mouseState.Y);
-                    }
-                }
-                else
-                {
-                    Mouse.SetCursor(MouseCursor.Arrow);
-                    lastDragPosition = default(HexPoint);
-                    draggingCamera = false;
-                }
-
-                if (mouseState.ScrollWheelValue != lastScrollWheelValue)
-                {
-                    originalSize = HandleCameraResize(_board, mouseState);
-                }
-
                 _board.Layout = new Layout(Layout.flat, originalSize, originHexPoint);
                 return;
             }
 
             // Handle AI opponent turn
-            if (_useAI && _playingState == PlayingState.OpponentsTurn)
+            if (HandleAiTurn())
             {
-                if (_ai.MakeMove(_opponentTurnCount, _opponentQueenPlaced))
-                {
-                    // Check if AI placed a Queen
-                    if (!_opponentQueenPlaced)
-                    {
-                        var darkQueens = _board.Tiles.Values.Where(t => t.Team == BugTeam.Dark && t.Type == BugType.QueenBee).ToList();
-                        if (darkQueens.Count > 0)
-                            _opponentQueenPlaced = true;
-                    }
-
-                    _board.SelectedTile = null;
-                    _board.ClearAvailableTiles();
-                    SwitchTurns();
-                    
-                    // Check if anyone won
-                    CheckWinCondition();
-                }
                 return; // Don't process player input during AI turn
             }
 
@@ -311,26 +266,7 @@ namespace HiveOnline
             }
             else//Drag
             {
-                if (mouseState.LeftButton == ButtonState.Pressed)
-                {
-                    if (mouseState.X > 0 && mouseState.Y > 0 && mouseState.X < _board.Graphics.Width && mouseState.Y < _board.Graphics.Height)
-                    {
-                        Mouse.SetCursor(MouseCursor.Crosshair);
-                        draggingCamera = true;
-                        if (lastDragPosition == default(HexPoint))
-                            lastDragPosition = new HexPoint(mouseState.X, mouseState.Y);
-
-                        originHexPoint = HandleCameraDrag(_board, mouseState);
-
-                        lastDragPosition = new HexPoint(mouseState.X, mouseState.Y);
-                    }
-                }
-                else
-                {
-                    Mouse.SetCursor(MouseCursor.Arrow);
-                    lastDragPosition = default(HexPoint);
-                    draggingCamera = false;
-                }
+                HandleCameraInput(mouseState, ref originHexPoint);
             }
 
             if (mouseState.ScrollWheelValue != lastScrollWheelValue)
@@ -339,6 +275,65 @@ namespace HiveOnline
             }
 
             _board.Layout = new Layout(Layout.flat, originalSize, originHexPoint);
+        }
+
+        private void ProcessNetworkMessages()
+        {
+            while (_networkClient != null && _networkClient.IsConnected && _networkClient.TryDequeueMessage(out var message))
+                ProcessIncomingNetworkMessage(message);
+        }
+
+        private bool HandleCompletedGame(MouseState mouseState, ref HexPoint originHexPoint, ref HexPoint originalSize)
+        {
+            if (_playingState != PlayingState.Won && _playingState != PlayingState.Lost)
+                return false;
+
+            HandleCameraInput(mouseState, ref originHexPoint);
+
+            if (mouseState.ScrollWheelValue != lastScrollWheelValue)
+                originalSize = HandleCameraResize(_board, mouseState);
+
+            return true;
+        }
+
+        private void HandleCameraInput(MouseState mouseState, ref HexPoint originHexPoint)
+        {
+            if (mouseState.LeftButton == ButtonState.Pressed && mouseState.X > 0 && mouseState.Y > 0 &&
+                mouseState.X < _board.Graphics.Width && mouseState.Y < _board.Graphics.Height)
+            {
+                Mouse.SetCursor(MouseCursor.Crosshair);
+                draggingCamera = true;
+                if (lastDragPosition == default(HexPoint))
+                    lastDragPosition = new HexPoint(mouseState.X, mouseState.Y);
+
+                originHexPoint = HandleCameraDrag(_board, mouseState);
+                lastDragPosition = new HexPoint(mouseState.X, mouseState.Y);
+            }
+            else if (mouseState.LeftButton == ButtonState.Released)
+            {
+                Mouse.SetCursor(MouseCursor.Arrow);
+                lastDragPosition = default(HexPoint);
+                draggingCamera = false;
+            }
+        }
+
+        private bool HandleAiTurn()
+        {
+            if (!_useAI || _playingState != PlayingState.OpponentsTurn)
+                return false;
+
+            if (_ai.MakeMove(_opponentTurnCount, _opponentQueenPlaced))
+            {
+                if (!_opponentQueenPlaced && _board.Tiles.Values.Any(t => t.Team == BugTeam.Dark && t.Type == BugType.QueenBee))
+                    _opponentQueenPlaced = true;
+
+                _board.SelectedTile = null;
+                _board.ClearAvailableTiles();
+                SwitchTurns();
+                CheckWinCondition();
+            }
+
+            return true;
         }
 
         private bool MustPlayQueen(ITile tile)
@@ -563,8 +558,6 @@ namespace HiveOnline
         {
             //System.Diagnostics.Debug.WriteLine($"MouseDrag: {lastDragPosition.X}, {lastDragPosition.Y}");
             var mouseDragChange = new HexPoint(-1, -1) * (lastDragPosition - new HexPoint(mouseState.X, mouseState.Y));
-
-            //TODO: Don't allow move if no tiles on screen
 
             var newLayout = new Layout(board.Layout.orientation, board.Layout.size, board.Layout.origin + mouseDragChange);
 
