@@ -85,18 +85,18 @@ public sealed class BoardRenderer
 
         if (tile is Beetle beetle)
         {
-            DrawBeetleStack(beetle, view, location, size, 0);
+            DrawBeetleStack(beetle, view, location, size, 0, beetle.IsInspecting);
             return;
         }
 
         _tileGraphics.Draw(tile.Type, tile.Team, location, size);
     }
 
-    private int DrawBeetleStack(Beetle beetle, BoardViewState view, HexPoint location, HexPoint size, int level)
+    private int DrawBeetleStack(Beetle beetle, BoardViewState view, HexPoint location, HexPoint size, int level, bool isInspecting)
     {
-        var overlap = (int)(view.Layout.size.X * (beetle.IsInspecting ? .75 : .1));
+        var overlap = (int)(view.Layout.size.X * (isInspecting ? .75 : .1));
         if (beetle.CoveredPiece is Beetle coveredBeetle)
-            level = DrawBeetleStack(coveredBeetle, view, location, size, level);
+            level = DrawBeetleStack(coveredBeetle, view, location, size, level, isInspecting);
         else if (beetle.CoveredPiece != null)
         {
             var coveredLocation = new HexPoint(location.X + level * overlap, location.Y + level * overlap);

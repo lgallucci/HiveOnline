@@ -101,34 +101,5 @@ namespace HiveGraphics
             return new RenderTarget2D(Device, ScreenSize.X, ScreenSize.Y, false,
                 SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.DiscardContents);
         }
-
-        public void DrawBloom(Texture2D texture, Vector2 position, Color color,
-            float rotation = 0f, Vector2 origin = default, Vector2? scale = null,
-            SpriteEffects effects = SpriteEffects.None, float layerDepth = 0f)
-        {
-            BloomRenderer.Draw(texture, position, color, rotation, origin, scale, effects, layerDepth);
-        }
-
-        public void DrawBloom(Texture2D texture, Vector2 position, Rectangle? sourceRectangle,
-            Color color, float rotation = 0f, Vector2 origin = default, Vector2? scale = null,
-            SpriteEffects effects = SpriteEffects.None, float layerDepth = 0f)
-        {
-            BloomRenderer.Draw(texture, position, sourceRectangle, color, rotation, origin, scale, effects, layerDepth);
-        }
-
-        public void DrawBloom(Texture2D texture, Rectangle destinationRectangle, Color color)
-        {
-            BloomRenderer.Draw(texture, destinationRectangle, color);
-        }
-
-        public void DrawBloomLine(Texture2D texture, Vector2 start, Vector2 end, Color color, float width)
-        {
-            BloomRenderer.DrawLine(texture, start, end, color, width);
-        }
-
-        internal void SetRenderTarget(RenderTarget2D value)
-        {
-            Device.SetRenderTarget(value);
-        }
     }
 }
