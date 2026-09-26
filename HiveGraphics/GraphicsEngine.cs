@@ -84,10 +84,16 @@ namespace HiveGraphics
             }
         }
 
-        public void DrawString(string text)
+        public void DrawStringCentered(string text, Color color)
         {
             var fontSize = Art.NameFont.MeasureString(text);
-            SpriteBatch.DrawString(Art.NameFont, text, new Vector2((ScreenSize.X / 2) - fontSize.X / 2, (ScreenSize.Y / 2) - fontSize.Y / 2), Color.DeepPink);
+            SpriteBatch.DrawString(Art.NameFont, text, new Vector2((ScreenSize.X / 2) - fontSize.X / 2, (ScreenSize.Y / 2) - fontSize.Y / 2), color);
+        }
+
+        public void DrawStringTop(string text, Color color)
+        {
+            var fontSize = Art.NameFont.MeasureString(text);
+            SpriteBatch.DrawString(Art.NameFont, text, new Vector2((ScreenSize.X / 2) - fontSize.X / 2, 0), color);
         }
 
         public void Unload()

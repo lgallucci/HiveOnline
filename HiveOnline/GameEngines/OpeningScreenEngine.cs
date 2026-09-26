@@ -13,7 +13,7 @@ namespace HiveOnline.GameEngines
     {
         public override void Draw(GraphicsEngine _graphicsEngine)
         {
-            _graphicsEngine.DrawString("HIVE !   Click to play...");
+            _graphicsEngine.DrawStringCentered("HIVE !   Click to play...", Color.DeepPink);
         }
 
         public override void SetScreenSize(int screenWidth, int screenHeight)

@@ -111,10 +111,10 @@ namespace HiveOnline
                 GameState _previousState = _gameState;
                 _gameEngine.Update(gameTime, ref _gameState);
 
-                if (_gameMode != GameMode.Multiplayer && _gameState == GameState.OpeningScreen && _previousState == GameState.OpeningScreen)
-                {
-                    _gameState = GameState.Playing;
-                }
+                // if (_gameMode != GameMode.Multiplayer && _gameState == GameState.OpeningScreen && _previousState == GameState.OpeningScreen)
+                // {
+                //     _gameState = GameState.Playing;
+                // }
 
                 if (_gameState == GameState.Playing && _previousState != GameState.Playing)
                 {
@@ -143,6 +143,8 @@ namespace HiveOnline
             _gameEngine.Draw(_graphicsEngine);
 
             //_graphicsEngine.DrawFps(framesPerSecond);
+
+            _graphicsEngine.DrawStringTop(_gameMode.ToString(), Color.White);
 
             _graphicsEngine.EndSprites();
 
