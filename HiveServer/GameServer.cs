@@ -11,7 +11,7 @@ using HiveLib.Rules;
 
 namespace HiveServer
 {
-    public class GameServer : IHostedService
+    public partial class GameServer : IHostedService
     {
         private readonly List<ConnectedHiveClient> _clients = new();
         private readonly List<HiveGame> _games = new();
@@ -82,7 +82,26 @@ namespace HiveServer
             if (normalized.StartsWith("NAME|", StringComparison.OrdinalIgnoreCase))
             {
                 var name = normalized.Substring(5).Trim();
+                name = name.Replace('|', ' ');
                 client.Name = name.Length > 20 ? name.Substring(0, 20) : name;
+                return;
+            }
+
+            if (normalized.StartsWith("CHALLENGE|", StringComparison.OrdinalIgnoreCase))
+            {
+                await Challenge(client, normalized.Substring(10));
+                return;
+            }
+
+            if (normalized.StartsWith("ACCEPT|", StringComparison.OrdinalIgnoreCase))
+            {
+                await AcceptChallenge(client, normalized.Substring(7));
+                return;
+            }
+
+            if (normalized.StartsWith("DECLINE|", StringComparison.OrdinalIgnoreCase))
+            {
+                await DeclineChallenge(client, normalized.Substring(8));
                 return;
             }
 
@@ -103,6 +122,12 @@ namespace HiveServer
                 case "JOIN":
                     await QueueForMatch(client);
                     break;
+                case "LOBBY":
+                    await EnterLobby(client);
+                    break;
+                case "LEAVE_LOBBY":
+                    await LeaveLobby(client);
+                    break;
                 case "REMATCH":
                     await RequestRematch(client);
                     break;
@@ -117,6 +142,12 @@ namespace HiveServer
 
         private async Task QueueForMatch(ConnectedHiveClient client)
         {
+            if (client.InLobby)
+            {
+                await client.SendMessage("ERROR ALREADY_IN_LOBBY");
+                return;
+            }
+
             ConnectedHiveClient playerOne = null;
             ConnectedHiveClient playerTwo = null;
             HiveGame game = null;
@@ -154,6 +185,11 @@ namespace HiveServer
                 return;
             }
 
+            await AnnounceMatch(game, playerOne, playerTwo);
+        }
+
+        private async Task AnnounceMatch(HiveGame game, ConnectedHiveClient playerOne, ConnectedHiveClient playerTwo)
+        {
             await playerOne.SendMessage($"MATCHED {playerOne.Identifier} {playerTwo.Identifier}");
             await playerTwo.SendMessage($"MATCHED {playerTwo.Identifier} {playerOne.Identifier}");
             await playerOne.SendMessage($"OPPONENT_NAME|{playerTwo.Name ?? "Opponent"}");
@@ -289,10 +325,12 @@ namespace HiveServer
         {
             Console.WriteLine($"Removing Client {tcpClient.Identifier}! {(closedByRemote ? "closedByRemote" : "")}");
             ConnectedHiveClient opponent = null;
+            var outbox = new List<(ConnectedHiveClient To, string Message)>();
 
             lock (_syncRoot)
             {
                 _clients.Remove(tcpClient);
+                RemoveFromLobbyLocked(tcpClient, outbox);
                 if (_waitingQueue.Contains(tcpClient))
                 {
                     var remaining = new Queue<ConnectedHiveClient>();
@@ -318,6 +356,7 @@ namespace HiveServer
             }
 
             Trace($"Clients connected: {_clients.Count}, active games: {_games.Count}");
+            _ = Flush(outbox);
             if (opponent != null)
                 _ = opponent.SendMessage("OPPONENT_DISCONNECTED");
         }

@@ -19,6 +19,7 @@ namespace HiveServer
         public HiveGame? CurrentGame { get; set; }
         public bool WantsRematch { get; set; }
         public string? Name { get; set; }
+        public bool InLobby { get; set; }
 
         public string RemoteEndpoint => tcpClient?.ServerTcpClient?.Client?.RemoteEndPoint?.ToString() ?? "unknown";
 

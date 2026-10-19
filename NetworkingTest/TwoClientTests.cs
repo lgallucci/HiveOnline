@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
@@ -88,6 +89,72 @@ public class TwoClientTests
 
         await a.WaitFor(m => m == "OPPONENT_NAME|Bob");
         await b.WaitFor(m => m == "OPPONENT_NAME|Alice");
+    }
+
+    private static Guid IdOf(string message, string name) =>
+        Guid.Parse(message.Split('|').Skip(1).First(f => f.EndsWith("," + name)).Split(',')[0]);
+
+    private async Task<(TestClient A, TestClient B, Guid AId, Guid BId)> EnterLobbies()
+    {
+        var a = await Connect();
+        var b = await Connect();
+        await a.Client.SendName("Alice");
+        await b.Client.SendName("Bob");
+        await a.Client.EnterLobby();
+        await b.Client.EnterLobby();
+        var listForA = await a.WaitFor(m => m.StartsWith("LOBBY_LIST|") && m.Contains(",Bob"));
+        var listForB = await b.WaitFor(m => m.StartsWith("LOBBY_LIST|") && m.Contains(",Alice"));
+        return (a, b, IdOf(listForB, "Alice"), IdOf(listForA, "Bob"));
+    }
+
+    [TestMethod]
+    public async Task LobbyListsOtherPlayersAndDropsDisconnected()
+    {
+        var (a, b, _, _) = await EnterLobbies();
+        b.Dispose();
+        await a.WaitFor(m => m == "LOBBY_LIST");
+    }
+
+    [TestMethod]
+    public async Task AcceptedChallengeStartsGame()
+    {
+        var (a, b, aId, bId) = await EnterLobbies();
+
+        await a.Client.Challenge(bId);
+        await b.WaitFor(m => m == $"CHALLENGED|{aId},Alice");
+        await b.Client.AcceptChallenge(aId);
+
+        await a.WaitFor(m => m == "OPPONENT_NAME|Bob");
+        await a.WaitFor(m => m == "YOU_ARE_PLAYER_1");
+        await b.WaitFor(m => m == "YOU_ARE_PLAYER_2");
+    }
+
+    [TestMethod]
+    public async Task DeclinedChallengeNotifiesChallenger()
+    {
+        var (a, b, aId, bId) = await EnterLobbies();
+
+        await a.Client.Challenge(bId);
+        await b.WaitFor(m => m.StartsWith("CHALLENGED|"));
+        await b.Client.DeclineChallenge(aId);
+
+        await a.WaitFor(m => m == $"CHALLENGE_DECLINED|{bId}");
+    }
+
+    [TestMethod]
+    public async Task ChallengingUnknownPlayerIsRejected()
+    {
+        var (a, _, _, _) = await EnterLobbies();
+        await a.Client.Challenge(Guid.NewGuid());
+        await a.WaitFor(m => m == "ERROR PLAYER_UNAVAILABLE");
+    }
+
+    [TestMethod]
+    public async Task LobbyRequiresName()
+    {
+        var a = await Connect();
+        await a.Client.EnterLobby();
+        await a.WaitFor(m => m == "ERROR NAME_REQUIRED");
     }
 
     [TestMethod]

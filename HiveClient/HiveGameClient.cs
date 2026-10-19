@@ -89,6 +89,16 @@ namespace HiveClient
                 await SendMessage($"NAME|{clean}");
         }
 
+        public Task EnterLobby() => SendMessage("LOBBY");
+
+        public Task LeaveLobby() => SendMessage("LEAVE_LOBBY");
+
+        public Task Challenge(Guid playerId) => SendMessage($"CHALLENGE|{playerId}");
+
+        public Task AcceptChallenge(Guid playerId) => SendMessage($"ACCEPT|{playerId}");
+
+        public Task DeclineChallenge(Guid playerId) => SendMessage($"DECLINE|{playerId}");
+
         public async Task SendChat(string text)
         {
             var clean = text.Replace("\r", " ").Replace("\n", " ").Trim();

@@ -13,7 +13,8 @@ namespace HiveOnline
     {
         OpeningScreen = 0,
         ConnectToServer = 1,
-        Playing = 2
+        Playing = 2,
+        Lobby = 3
     }
 
     class HiveOnlineGame : Game
@@ -159,10 +160,10 @@ namespace HiveOnline
                 {
                     var useAi = _gameMode == GameMode.LocalAi;
                     var networkClient = _gameMode == GameMode.Multiplayer ? _hiveClient : null;
-                    if (_gameEngine is ConnectToServerEngine connectEngine)
+                    if (_gameEngine is LobbyEngine lobbyEngine)
                     {
-                        _team = connectEngine.AssignedTeam;
-                        _opponentName = connectEngine.OpponentName;
+                        _team = lobbyEngine.AssignedTeam;
+                        _opponentName = lobbyEngine.OpponentName;
                         Window.Title = $"Hive - {_team}";
                     }
                     _gameEngine = new RunningGameEngine(_screenWidth, _screenHeight, _team, networkClient, useAi, _playerName, _opponentName);
@@ -181,7 +182,11 @@ namespace HiveOnline
                 {
                     _hiveClient ??= new HiveGameClient(_address, _port);
                     _connectTask ??= Task.Run(() => _hiveClient.ConnectAsync());
-                    _gameEngine = new ConnectToServerEngine(_hiveClient, _playerName);
+                    _gameEngine = new ConnectToServerEngine(_hiveClient);
+                }
+                if (_gameState == GameState.Lobby && _previousState != GameState.Lobby)
+                {
+                    _gameEngine = new LobbyEngine(_hiveClient, _playerName);
                 }
             }
             base.Update(gameTime);
