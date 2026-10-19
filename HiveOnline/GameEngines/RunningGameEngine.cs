@@ -46,8 +46,11 @@ namespace HiveOnline
         private readonly Action<string> _messageHandler;
 
         public bool RestartRequested { get; private set; }
-        private readonly BugTeam _opponentTeam;
+        private BugTeam _opponentTeam;
         private bool IsNetworkGame => _networkClient != null;
+
+        // Hot-seat game: both players share the screen and the active player's pile is shown at the bottom.
+        private bool IsLocalTwoPlayer => !_useAI && _networkClient == null;
 
         // Game rule tracking
         private int _playerTurnCount = 0;  // Light player's turn count
@@ -333,6 +336,10 @@ namespace HiveOnline
                                 UpdateTurnDisplay();
                                 CheckNetworkResult();
                             }
+                            else
+                            {
+                                EndLocalTurn();
+                            }
 
                             topMost = default(Hex); bottomMost = default(Hex); leftMost = default(Hex); rightMost = default(Hex);
                             foreach (var hex in _board.Tiles.Select(t => t.Value))
@@ -366,7 +373,7 @@ namespace HiveOnline
                         }
 
                         // Prevent movement until Queen is placed
-                        if (!CanMoveAnyPiece(BugTeam.Light))
+                        if (!CanMoveAnyPiece(_playerTeam))
                         {
                             return; // Can't move until Queen is placed
                         }
@@ -456,6 +463,13 @@ namespace HiveOnline
                 if (_rules.IsFinished)
                 {
                     CheckNetworkResult();
+                    return;
+                }
+
+                if (IsLocalTwoPlayer)
+                {
+                    SwapSides();
+                    _board.CurrentTurn = $"{_board.UserName}'s Turn - {_board.OpponentName} had no legal moves and was skipped";
                     return;
                 }
             }
@@ -866,12 +880,45 @@ namespace HiveOnline
             return true; // All 6 neighbors contain pieces
         }
 
+        private void EndLocalTurn()
+        {
+            if (_rules.IsFinished)
+            {
+                _playingState = PlayingState.Won;
+                var winner = _rules.WinningTeam == _playerTeam ? _board.UserName : _board.OpponentName;
+                _board.CurrentTurn = $"{winner} wins! The Queen is surrounded!";
+                DeselectAll();
+                return;
+            }
+
+            SwapSides();
+        }
+
+        // Hands the board to the other local player: their pile moves to the bottom of the screen.
+        private void SwapSides()
+        {
+            (_playerTeam, _opponentTeam) = (_opponentTeam, _playerTeam);
+            (_board.UserPile, _board.OpponentPile) = (_board.OpponentPile, _board.UserPile);
+            (_board.UserName, _board.OpponentName) = (_board.OpponentName, _board.UserName);
+            _playingState = PlayingState.YourTurn;
+            _turnChecked = false;
+            DeselectAll();
+            UpdateTurnDisplay();
+        }
+
         private void UpdateTurnDisplay()
         {
             string turnText = _playingState == PlayingState.YourTurn ? "Your Turn" : "Opponent's Turn";
+            if (IsLocalTwoPlayer)
+                turnText = $"{_board.UserName}'s Turn";
             
             // Add warnings if Queen must be played
-            if (_playingState == PlayingState.YourTurn && !_playerQueenPlaced && _playerTurnCount >= 3)
+            if (IsLocalTwoPlayer)
+            {
+                if (_rules.GetTurnCount(_playerTeam) >= 3 && !_rules.IsQueenPlaced(_playerTeam))
+                    turnText += " (Queen required!)";
+            }
+            else if (_playingState == PlayingState.YourTurn && !_playerQueenPlaced && _playerTurnCount >= 3)
                 turnText += " (Queen required!)";
             else if (_playingState == PlayingState.OpponentsTurn && !_opponentQueenPlaced && _opponentTurnCount >= 3)
                 turnText += " (Queen required!)";
@@ -891,6 +938,9 @@ namespace HiveOnline
         private bool CanMoveAnyPiece(BugTeam team)
         {
             // Can't move pieces until your Queen is placed
+            if (!_useAI)
+                return _rules.IsQueenPlaced(team);
+
             if (team == _playerTeam)
                 return _playerQueenPlaced;
             else
