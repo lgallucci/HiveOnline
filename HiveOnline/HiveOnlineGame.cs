@@ -24,6 +24,8 @@ namespace HiveOnline
         private readonly int _port;
         private Task _connectTask;
         private BugTeam _team = BugTeam.Light;
+        private string _playerName = string.Empty;
+        private string _opponentName;
 
         private GraphicsEngine _graphicsEngine;
         private GameEngine _gameEngine;
@@ -131,7 +133,22 @@ namespace HiveOnline
                     _gameEngine.UpdateInactive(gameTime, ref _gameState);
 
                 if (_gameEngine is OpeningScreenEngine openingScreen && openingScreen.SelectedMode.HasValue)
+                {
                     _gameMode = openingScreen.SelectedMode.Value;
+                    _playerName = openingScreen.PlayerName;
+                    if (_gameMode == GameMode.LocalAi)
+                    {
+                        if (_playerName.Length == 0)
+                            _playerName = "Player";
+                        _opponentName = "AI";
+                    }
+                    else if (_gameMode == GameMode.LocalTwoPlayer)
+                    {
+                        if (_playerName.Length == 0)
+                            _playerName = "Player1";
+                        _opponentName = "Player2";
+                    }
+                }
 
                 // if (_gameMode != GameMode.Multiplayer && _gameState == GameState.OpeningScreen && _previousState == GameState.OpeningScreen)
                 // {
@@ -145,16 +162,17 @@ namespace HiveOnline
                     if (_gameEngine is ConnectToServerEngine connectEngine)
                     {
                         _team = connectEngine.AssignedTeam;
+                        _opponentName = connectEngine.OpponentName;
                         Window.Title = $"Hive - {_team}";
                     }
-                    _gameEngine = new RunningGameEngine(_screenWidth, _screenHeight, _team, networkClient, useAi);
+                    _gameEngine = new RunningGameEngine(_screenWidth, _screenHeight, _team, networkClient, useAi, _playerName, _opponentName);
                     SetWindowSize();
                 }
                 if (_gameEngine is RunningGameEngine finished && finished.RestartRequested)
                 {
                     finished.Detach();
                     var rematchClient = _gameMode == GameMode.Multiplayer ? _hiveClient : null;
-                    _gameEngine = new RunningGameEngine(_screenWidth, _screenHeight, _team, rematchClient, _gameMode == GameMode.LocalAi);
+                    _gameEngine = new RunningGameEngine(_screenWidth, _screenHeight, _team, rematchClient, _gameMode == GameMode.LocalAi, _playerName, _opponentName);
                     SetWindowSize();
                 }
                 if (_gameState == GameState.OpeningScreen && _previousState != GameState.OpeningScreen)
@@ -163,7 +181,7 @@ namespace HiveOnline
                 {
                     _hiveClient ??= new HiveGameClient(_address, _port);
                     _connectTask ??= Task.Run(() => _hiveClient.ConnectAsync());
-                    _gameEngine = new ConnectToServerEngine(_hiveClient);
+                    _gameEngine = new ConnectToServerEngine(_hiveClient, _playerName);
                 }
             }
             base.Update(gameTime);

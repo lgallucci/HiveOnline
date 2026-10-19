@@ -79,6 +79,13 @@ namespace HiveServer
                 return;
             }
 
+            if (normalized.StartsWith("NAME|", StringComparison.OrdinalIgnoreCase))
+            {
+                var name = normalized.Substring(5).Trim();
+                client.Name = name.Length > 20 ? name.Substring(0, 20) : name;
+                return;
+            }
+
             if (normalized.StartsWith("CHAT|", StringComparison.OrdinalIgnoreCase))
             {
                 await RouteChat(client, normalized);
@@ -149,6 +156,8 @@ namespace HiveServer
 
             await playerOne.SendMessage($"MATCHED {playerOne.Identifier} {playerTwo.Identifier}");
             await playerTwo.SendMessage($"MATCHED {playerTwo.Identifier} {playerOne.Identifier}");
+            await playerOne.SendMessage($"OPPONENT_NAME|{playerTwo.Name ?? "Opponent"}");
+            await playerTwo.SendMessage($"OPPONENT_NAME|{playerOne.Name ?? "Opponent"}");
             await playerOne.SendMessage("YOU_ARE_PLAYER_1");
             await playerTwo.SendMessage("YOU_ARE_PLAYER_2");
 

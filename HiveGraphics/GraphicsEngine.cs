@@ -104,6 +104,12 @@ namespace HiveGraphics
                 new Vector2(bounds.X + (bounds.Width - size.X) / 2, bounds.Y + (bounds.Height - size.Y) / 2), Color.White);
         }
 
+        public void DrawStringTop(string text, Color color, int y)
+        {
+            var fontSize = Art.NameFont.MeasureString(text);
+            SpriteBatch.DrawString(Art.NameFont, text, new Vector2((ScreenSize.X / 2) - fontSize.X / 2, y), color);
+        }
+
         public void DrawStringTop(string text, Color color)
         {
             var fontSize = Art.NameFont.MeasureString(text);

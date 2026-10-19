@@ -82,6 +82,13 @@ namespace HiveClient
             await SendMessage(payload);
         }
 
+        public async Task SendName(string name)
+        {
+            var clean = name.Replace("|", " ").Replace("\r", " ").Replace("\n", " ").Trim();
+            if (clean.Length > 0)
+                await SendMessage($"NAME|{clean}");
+        }
+
         public async Task SendChat(string text)
         {
             var clean = text.Replace("\r", " ").Replace("\n", " ").Trim();

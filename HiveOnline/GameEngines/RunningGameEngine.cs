@@ -54,7 +54,7 @@ namespace HiveOnline
         private bool _playerQueenPlaced = false;
         private bool _opponentQueenPlaced = false;
 
-        public RunningGameEngine(int screenWidth, int screenHeight, BugTeam team, HiveGameClient networkClient = null, bool useAi = true)
+        public RunningGameEngine(int screenWidth, int screenHeight, BugTeam team, HiveGameClient networkClient = null, bool useAi = true, string playerName = null, string opponentName = null)
         {
             _screenWidth = screenWidth;
             _screenHeight = screenHeight;
@@ -75,11 +75,18 @@ namespace HiveOnline
             _boardRenderer.Resize(_view, _board);
             _ai = new SimpleAI(_board);
 
+            if (_networkClient == null && !string.IsNullOrWhiteSpace(playerName))
+            {
+                _board.UserName = playerName;
+                if (!string.IsNullOrWhiteSpace(opponentName))
+                    _board.OpponentName = opponentName;
+            }
+
             if (_networkClient != null)
             {
                 _board.ChatWindow.ChatMessages.Clear();
-                _board.UserName = $"You ({team})";
-                _board.OpponentName = $"Opponent ({_opponentTeam})";
+                _board.UserName = string.IsNullOrWhiteSpace(playerName) ? $"You ({team})" : playerName;
+                _board.OpponentName = string.IsNullOrWhiteSpace(opponentName) ? $"Opponent ({_opponentTeam})" : opponentName;
                 _messageHandler = message =>
                 {
                     if (!string.IsNullOrWhiteSpace(message))

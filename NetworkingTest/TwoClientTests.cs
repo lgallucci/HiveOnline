@@ -75,6 +75,22 @@ public class TwoClientTests
     }
 
     [TestMethod]
+    public async Task PlayersReceiveOpponentNames()
+    {
+        var a = await Connect();
+        var b = await Connect();
+
+        await a.Client.SendName("Alice");
+        await b.Client.SendName("Bob");
+        await a.Client.JoinGame();
+        await a.WaitFor(m => m == "WAITING_FOR_OPPONENT");
+        await b.Client.JoinGame();
+
+        await a.WaitFor(m => m == "OPPONENT_NAME|Bob");
+        await b.WaitFor(m => m == "OPPONENT_NAME|Alice");
+    }
+
+    [TestMethod]
     public async Task JoiningTwiceIsRejected()
     {
         var a = await Connect();

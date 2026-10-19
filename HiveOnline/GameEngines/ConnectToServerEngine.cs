@@ -14,9 +14,15 @@ namespace HiveOnline.GameEngines
         private volatile string _status = "Connecting to server...";
         private int _assignedTeam = -1;
 
-        public ConnectToServerEngine(HiveGameClient client)
+        private readonly string _playerName;
+        private volatile string _opponentName = "Opponent";
+
+        public string OpponentName => _opponentName;
+
+        public ConnectToServerEngine(HiveGameClient client, string playerName)
         {
             _client = client;
+            _playerName = playerName;
             _client.MessageReceived += OnMessage;
         }
 
@@ -24,6 +30,12 @@ namespace HiveOnline.GameEngines
 
         private void OnMessage(string message)
         {
+            if (message.StartsWith("OPPONENT_NAME|", StringComparison.Ordinal))
+            {
+                _opponentName = message.Substring("OPPONENT_NAME|".Length);
+                return;
+            }
+
             switch (message)
             {
                 case "WAITING_FOR_OPPONENT":
@@ -40,6 +52,12 @@ namespace HiveOnline.GameEngines
                         _status = message;
                     break;
             }
+        }
+
+        private async System.Threading.Tasks.Task JoinAsync()
+        {
+            await _client.SendName(_playerName);
+            await _client.JoinGame();
         }
 
         public override void Draw(GraphicsEngine _graphicsEngine)
@@ -59,7 +77,7 @@ namespace HiveOnline.GameEngines
             {
                 _joinSent = true;
                 _status = "Joining game...";
-                _ = _client.JoinGame();
+                _ = JoinAsync();
             }
 
             if (_assignedTeam >= 0)
