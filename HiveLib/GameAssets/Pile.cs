@@ -198,6 +198,12 @@ namespace HiveOnline.GameAssets
 
             var hasTeamTile = board.Tiles.Values.Any(t => t.Team == team);
 
+            // Only a player's very first piece may touch an enemy piece. If our pieces are all buried
+            // under beetles we have no top-level piece to place next to, so there is no legal placement.
+            var isFirstPlacement = board.Tiles.Count == 1 && !hasTeamTile;
+            if (!hasTeamTile && !isFirstPlacement)
+                return availableTiles;
+
             foreach (var tile in board.Tiles.Values)
             {
                 if (hasTeamTile && tile.Team != team)

@@ -22,6 +22,7 @@ namespace HiveOnline
         OpponentsTurn = 1,
         Won = 2,
         Lost = 3,
+        Draw = 4,
     }
 
     class RunningGameEngine : GameEngine
@@ -146,7 +147,7 @@ namespace HiveOnline
 
         private Microsoft.Xna.Framework.Rectangle QuitNoButton => new Microsoft.Xna.Framework.Rectangle(_view.ScreenSize.X / 2 + 10, _view.ScreenSize.Y / 2, 150, 50);
 
-        private bool GameOver => _playingState == PlayingState.Won || _playingState == PlayingState.Lost;
+        private bool GameOver => _playingState == PlayingState.Won || _playingState == PlayingState.Lost || _playingState == PlayingState.Draw;
 
         // In multiplayer a rematch is impossible once the opponent has left.
         private bool CanRematch => GameOver && !_opponentLeft;
@@ -238,6 +239,19 @@ namespace HiveOnline
 
             var fractionalHex = _view.Layout.PixelToHex(new HexPoint(mouseState.X, mouseState.Y));
             var clickedHex = fractionalHex.HexRound();
+
+            // Expanding a stack is view-only, so it works on any turn and after the game ends.
+            if (rightClicked && _board.ContainsTile(clickedHex) &&
+                !_view.ContainsChat(mouseState.X, mouseState.Y) &&
+                !_view.ContainsPile(_board.UserPile, mouseState.X, mouseState.Y, false))
+            {
+                var inspected = _board.Tiles[clickedHex.GetHashCode()];
+                inspected.IsInspecting = !inspected.IsInspecting;
+            }
+
+            // Selection never survives the end of your turn or the end of the game.
+            if (_playingState != PlayingState.YourTurn && _board.SelectedTile != null)
+                DeselectAll();
 
             // Allow camera movement after the game ends, but block all piece interaction.
             if (HandleCompletedGame(mouseState, ref originHexPoint, ref originalSize))
@@ -368,11 +382,6 @@ namespace HiveOnline
                         _board.ClearAvailableTiles();
                     }
                 }
-                else if (rightClicked)
-                {
-                    var tile = _board.Tiles[clickedHex.GetHashCode()];
-                    tile.IsInspecting = !tile.IsInspecting;
-                }
             }
             else//Drag
             {
@@ -396,6 +405,64 @@ namespace HiveOnline
         {
             while (_networkClient != null && _networkClient.IsConnected && _pendingNetworkMessages.TryDequeue(out var message))
                 ProcessIncomingNetworkMessage(message);
+
+            SkipTurnIfStuck();
+        }
+
+        private bool _turnChecked;
+        private int _aiPassStreak;
+
+        private bool HasLegalMove(BugTeam team)
+        {
+            if (!_useAI)
+                return _rules.HasLegalMove(team);
+
+            var isPlayer = team == _playerTeam;
+            return MoveAvailability.HasLegalMove(_board, PileFor(team), team,
+                isPlayer ? _playerTurnCount : _opponentTurnCount, isPlayer ? _playerQueenPlaced : _opponentQueenPlaced);
+        }
+
+        // Skips your turn when you have nothing to place and nothing that can move.
+        private void SkipTurnIfStuck()
+        {
+            if (_playingState != PlayingState.YourTurn || GameOver)
+            {
+                _turnChecked = false;
+                return;
+            }
+
+            if (_turnChecked || _board.Tiles.Count == 0)
+                return;
+            _turnChecked = true;
+
+            if (HasLegalMove(_playerTeam))
+                return;
+
+            DeselectAll();
+            if (_useAI)
+            {
+                if (++_aiPassStreak >= 2)
+                {
+                    _playingState = PlayingState.Draw;
+                    _board.CurrentTurn = "Draw! Neither player can move.";
+                    return;
+                }
+            }
+            else
+            {
+                if (IsNetworkGame)
+                    _ = _networkClient.SendMessage("PASS");
+                _rules.TryPass(_playerTeam);
+                if (_rules.IsFinished)
+                {
+                    CheckNetworkResult();
+                    return;
+                }
+            }
+
+            _playingState = PlayingState.OpponentsTurn;
+            UpdateTurnDisplay();
+            _board.CurrentTurn = "Opponent's Turn - you had no legal moves and were skipped";
         }
 
         private void HandleChatClick(MouseState mouseState)
@@ -461,7 +528,7 @@ namespace HiveOnline
 
         private bool HandleCompletedGame(MouseState mouseState, ref HexPoint originHexPoint, ref HexPoint originalSize)
         {
-            if (_playingState != PlayingState.Won && _playingState != PlayingState.Lost)
+            if (!GameOver)
                 return false;
 
             if (!draggingCamera && _view.ContainsChat(mouseState.X, mouseState.Y))
@@ -500,6 +567,22 @@ namespace HiveOnline
         {
             if (!_useAI || _playingState != PlayingState.OpponentsTurn)
                 return false;
+
+            if (_board.Tiles.Count > 0 && !HasLegalMove(_opponentTeam))
+            {
+                if (++_aiPassStreak >= 2)
+                {
+                    _playingState = PlayingState.Draw;
+                    _board.CurrentTurn = "Draw! Neither player can move.";
+                }
+                else
+                {
+                    _playingState = PlayingState.YourTurn;
+                    UpdateTurnDisplay();
+                    _board.CurrentTurn = "Your Turn - the AI had no moves and was skipped";
+                }
+                return true;
+            }
 
             if (_ai.MakeMove(gameTime.ElapsedGameTime.TotalSeconds, _opponentTurnCount, _opponentQueenPlaced))
             {
@@ -550,10 +633,28 @@ namespace HiveOnline
             if (message.Equals("OPPONENT_DISCONNECTED", StringComparison.OrdinalIgnoreCase))
             {
                 _opponentLeft = true;
-                if (_playingState != PlayingState.Won && _playingState != PlayingState.Lost)
+                if (!GameOver)
                 {
                     _playingState = PlayingState.Won;
                     _board.CurrentTurn = "Opponent disconnected. You win!";
+                }
+                return;
+            }
+
+            if (message.Equals("PASS", StringComparison.OrdinalIgnoreCase))
+            {
+                if (_rules.TryPass(_opponentTeam).IsValid)
+                {
+                    if (_rules.IsFinished)
+                    {
+                        CheckNetworkResult();
+                    }
+                    else
+                    {
+                        _playingState = PlayingState.YourTurn;
+                        UpdateTurnDisplay();
+                        _board.CurrentTurn = "Your Turn - opponent had no moves and was skipped";
+                    }
                 }
                 return;
             }
@@ -651,7 +752,12 @@ namespace HiveOnline
             if (!_rules.IsFinished)
                 return;
 
-            if (_rules.WinningTeam == _playerTeam)
+            if (_rules.WinningTeam == null)
+            {
+                _playingState = PlayingState.Draw;
+                _board.CurrentTurn = "Draw! Neither player can move.";
+            }
+            else if (_rules.WinningTeam == _playerTeam)
             {
                 _playingState = PlayingState.Won;
                 _board.CurrentTurn = "You won! Opponent's Queen is surrounded!";
@@ -710,6 +816,7 @@ namespace HiveOnline
 
         private void SwitchTurns()
         {
+            _aiPassStreak = 0;
             if (_playingState == PlayingState.YourTurn)
             {
                 _playerTurnCount++;
@@ -770,6 +877,15 @@ namespace HiveOnline
                 turnText += " (Queen required!)";
 
             _board.CurrentTurn = turnText;
+
+            if (_playingState != PlayingState.YourTurn)
+                DeselectAll();
+        }
+
+        private void DeselectAll()
+        {
+            _board.SelectedTile = null;
+            _board.ClearAvailableTiles();
         }
 
         private bool CanMoveAnyPiece(BugTeam team)

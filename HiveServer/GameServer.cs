@@ -82,6 +82,12 @@ namespace HiveServer
                 return;
             }
 
+            if (normalized.Equals("PASS", StringComparison.OrdinalIgnoreCase))
+            {
+                await RoutePass(client);
+                return;
+            }
+
             if (normalized.StartsWith("NAME|", StringComparison.OrdinalIgnoreCase))
             {
                 var name = normalized.Substring(5).Trim();
@@ -235,6 +241,36 @@ namespace HiveServer
             }
 
             await opponent.SendMessage(message);
+        }
+
+        private async Task RoutePass(ConnectedHiveClient client)
+        {
+            ConnectedHiveClient opponent = null;
+            MoveResult result = null;
+            lock (_syncRoot)
+            {
+                var game = client.CurrentGame;
+                if (game != null)
+                {
+                    opponent = game.GetOpponent(client);
+                    result = game.State.TryPass(game.GetTeam(client));
+                }
+            }
+
+            if (opponent == null)
+            {
+                await client.SendMessage("ERROR NOT_IN_GAME");
+                return;
+            }
+
+            Trace($"Pass from {client.Identifier} -> {(result.IsValid ? "accepted" : result.ErrorCode)}");
+            if (!result.IsValid)
+            {
+                await client.SendMessage($"PASS_REJECTED {result.ErrorCode}");
+                return;
+            }
+
+            await opponent.SendMessage("PASS");
         }
 
         private async Task RequestRematch(ConnectedHiveClient client)

@@ -5,6 +5,7 @@ using HiveOnline.GameAssets;
 using HiveGraphics.GameAssetsDraw;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace HiveGraphics;
 
@@ -86,7 +87,17 @@ public sealed class BoardRenderer
 
         if (tile is Beetle beetle)
         {
-            DrawBeetleStack(beetle, view, location, size, 0, beetle.IsInspecting);
+            var levels = DrawBeetleStack(beetle, view, location, size, 0, beetle.IsInspecting);
+
+            // Very light outline on the top tile of a stack so stacked beetles stand out.
+            if (beetle.CoveredPiece != null)
+            {
+                var overlap = (int)(view.Layout.size.X * (beetle.IsInspecting ? .75 : .1));
+                var shift = (levels - 1) * overlap;
+                var corners = view.Layout.PolygonCorners(tile.Location)
+                    .Select(c => new HexPoint(c.X - shift, c.Y - shift)).ToList();
+                _boardGraphics.DrawSubtleOutline(corners, new Color(255, 0, 150, 90), 2f);
+            }
             return;
         }
 

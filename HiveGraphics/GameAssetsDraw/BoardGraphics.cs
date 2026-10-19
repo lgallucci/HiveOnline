@@ -56,6 +56,16 @@ public class BoardGraphics : DrawableObject
         Context.Bloom.DrawLine(Art.Pixel, firstPoint.ToVector2(), previousPoint.Value.ToVector2(), outlineColor, 4f);
     }
 
+    // Thin translucent outline without glow, used for subtle emphasis.
+    public void DrawSubtleOutline(List<HexPoint> corners, Color color, float width)
+    {
+        for (var i = 0; i < corners.Count; i++)
+        {
+            var next = corners[(i + 1) % corners.Count];
+            Context.SpriteBatch.DrawLine(Art.Pixel, corners[i].ToVector2(), next.ToVector2(), color, width);
+        }
+    }
+
     public void DrawText(Layout layout, Hex location, string text, int colorR, int colorG, int colorB)
     {
         var vector2 = layout.HexToPixel(location);

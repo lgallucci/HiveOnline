@@ -10,6 +10,7 @@ public sealed class HiveGameState
 {
     private readonly bool[] _queenPlaced = new bool[2];
     private readonly int[] _turnCounts = new int[2];
+    private int _consecutivePasses;
 
     public HiveGameState(PlayingBoard board = null, BugTeam startingTeam = BugTeam.Light)
     {
@@ -25,6 +26,29 @@ public sealed class HiveGameState
     public int GetTurnCount(BugTeam team) => _turnCounts[GetTeamIndex(team)];
 
     public bool IsQueenPlaced(BugTeam team) => _queenPlaced[GetTeamIndex(team)];
+
+    public bool HasLegalMove(BugTeam team) =>
+        MoveAvailability.HasLegalMove(Board, GetPile(team), team, GetTurnCount(team), IsQueenPlaced(team));
+
+    // A team with no legal move must skip its turn. If both teams are stuck in a row the game is a draw.
+    public MoveResult TryPass(BugTeam team)
+    {
+        if (IsFinished)
+            return MoveResult.Rejected("GAME_FINISHED");
+        if (team != CurrentTeam)
+            return MoveResult.Rejected("NOT_YOUR_TURN");
+        if (HasLegalMove(team))
+            return MoveResult.Rejected("HAS_LEGAL_MOVE");
+
+        _consecutivePasses++;
+        if (_consecutivePasses >= 2)
+            IsFinished = true;
+        else
+            CurrentTeam = Opponent(team);
+
+        Board.ClearAvailableTiles();
+        return MoveResult.Accepted(false, IsFinished);
+    }
 
     public MoveResult TryApplyMove(HiveMove move)
     {
@@ -74,6 +98,7 @@ public sealed class HiveGameState
             _queenPlaced[GetTeamIndex(move.Team)] = true;
 
         _turnCounts[GetTeamIndex(move.Team)]++;
+        _consecutivePasses = 0;
         IsFinished = IsQueenSurrounded(BugTeam.Light) || IsQueenSurrounded(BugTeam.Dark);
         if (IsFinished)
             WinningTeam = IsQueenSurrounded(CurrentTeam == BugTeam.Light ? BugTeam.Dark : BugTeam.Light)

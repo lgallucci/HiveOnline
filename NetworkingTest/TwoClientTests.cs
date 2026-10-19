@@ -158,6 +158,22 @@ public class TwoClientTests
     }
 
     [TestMethod]
+    public async Task PassIsRejectedWhenPlayerHasMoves()
+    {
+        var (a, _) = await StartMatch();
+        await a.Client.SendMessage("PASS");
+        await a.WaitFor(m => m == "PASS_REJECTED HAS_LEGAL_MOVE");
+    }
+
+    [TestMethod]
+    public async Task PassOutsideGameIsRejected()
+    {
+        var a = await Connect();
+        await a.Client.SendMessage("PASS");
+        await a.WaitFor(m => m == "ERROR NOT_IN_GAME");
+    }
+
+    [TestMethod]
     public async Task JoiningTwiceIsRejected()
     {
         var a = await Connect();

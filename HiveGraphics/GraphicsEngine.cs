@@ -50,7 +50,11 @@ namespace HiveGraphics
             GraphicsDeviceManager.PreferredBackBufferWidth = screenWidth;
             GraphicsDeviceManager.PreferredBackBufferHeight = screenHeight;
 
-            GraphicsDeviceManager.ApplyChanges();
+            // Re-applying the size from inside a user resize fights the window manager and stops the
+            // window from shrinking, so only apply when the back buffer actually differs.
+            var backBuffer = Device?.PresentationParameters;
+            if (backBuffer == null || backBuffer.BackBufferWidth != screenWidth || backBuffer.BackBufferHeight != screenHeight)
+                GraphicsDeviceManager.ApplyChanges();
 
             if (Device != null && _sceneRenderTarget != null)
             {
