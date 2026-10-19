@@ -18,7 +18,7 @@ namespace HiveOnline
 
     class HiveOnlineGame : Game
     {
-        private readonly GameMode _gameMode;
+        private GameMode _gameMode;
         private HiveGameClient _hiveClient;
         private readonly string _address;
         private readonly int _port;
@@ -34,9 +34,8 @@ namespace HiveOnline
         int frameCount = 0;
         TimeSpan frameTimer = new TimeSpan(0);
 
-        public HiveOnlineGame(GameMode gameMode = GameMode.LocalAi, string address = "localhost", int port = 7777)
+        public HiveOnlineGame(string address = "localhost", int port = 7777)
         {
-            _gameMode = gameMode;
             _address = address;
             _port = port;
             _graphicsEngine = new GraphicsEngine(this);
@@ -82,11 +81,7 @@ namespace HiveOnline
         /// </summary>
         protected override void LoadContent()
         {
-            _gameEngine = new OpeningScreenEngine(_gameMode == GameMode.Multiplayer);
-            if (_gameMode == GameMode.Multiplayer)
-            {
-                _hiveClient = new HiveGameClient(_address, _port);
-            }
+            _gameEngine = new OpeningScreenEngine();
             SetWindowSize();
             _graphicsEngine.Load(GraphicsDevice, Content);
         }
@@ -126,13 +121,16 @@ namespace HiveOnline
             //if (Keyboard.GetState().IsKeyDown(Keys.Escape))
             //    Exit();
 
-            if (IsActive || _gameMode == GameMode.Multiplayer)
+            if (IsActive || _hiveClient != null)
             {
                 GameState _previousState = _gameState;
                 if (IsActive)
                     _gameEngine.Update(gameTime, ref _gameState);
                 else
                     _gameEngine.UpdateInactive(gameTime, ref _gameState);
+
+                if (_gameEngine is OpeningScreenEngine openingScreen && openingScreen.SelectedMode.HasValue)
+                    _gameMode = openingScreen.SelectedMode.Value;
 
                 // if (_gameMode != GameMode.Multiplayer && _gameState == GameState.OpeningScreen && _previousState == GameState.OpeningScreen)
                 // {
@@ -153,9 +151,10 @@ namespace HiveOnline
                     SetWindowSize();
                 }
                 if (_gameState == GameState.OpeningScreen && _previousState != GameState.OpeningScreen)
-                    _gameEngine = new OpeningScreenEngine(_gameMode == GameMode.Multiplayer);
+                    _gameEngine = new OpeningScreenEngine();
                 if (_gameState == GameState.ConnectToServer && _previousState != GameState.ConnectToServer)
                 {
+                    _hiveClient ??= new HiveGameClient(_address, _port);
                     _connectTask ??= Task.Run(() => _hiveClient.ConnectAsync());
                     _gameEngine = new ConnectToServerEngine(_hiveClient);
                 }
@@ -177,7 +176,8 @@ namespace HiveOnline
 
             //_graphicsEngine.DrawFps(framesPerSecond);
 
-            _graphicsEngine.DrawStringTop(_gameMode.ToString(), Color.White);
+            if (_gameEngine is not OpeningScreenEngine)
+                _graphicsEngine.DrawStringTop(_gameMode.ToString(), Color.White);
 
             _graphicsEngine.EndSprites();
 

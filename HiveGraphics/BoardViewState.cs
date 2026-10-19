@@ -17,6 +17,7 @@ public sealed class BoardViewState
     public Point ScreenSize { get; private set; }
     public Layout Layout { get; private set; }
     public bool ChatCollapsed { get; set; }
+    public bool ChatVisible { get; set; } = true;
     public Rectangle ChatBounds
     {
         get
@@ -46,7 +47,7 @@ public sealed class BoardViewState
         Layout = new Layout(Layout.flat, size, origin);
     }
 
-    public bool ContainsChat(int x, int y) => ChatBounds.Contains(x, y);
+    public bool ContainsChat(int x, int y) => ChatVisible && ChatBounds.Contains(x, y);
 
     public bool ContainsPile(Pile pile, int x, int y, bool opponent)
     {

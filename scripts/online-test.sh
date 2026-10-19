@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Starts the server in test mode and two multiplayer clients; Ctrl+C stops everything.
+# Starts the server in test mode and two clients (pick "Online Multiplayer" in each); Ctrl+C stops everything.
 set -e
 cd "$(dirname "$0")/.."
 PORT="${1:-7777}"
@@ -13,9 +13,9 @@ trap 'kill "${pids[@]}" 2>/dev/null || true' EXIT INT TERM
 dotnet run --no-build --project HiveServer -- --test "$PORT" &
 pids+=($!)
 sleep 2
-dotnet run --no-build --project HiveOnline -- multiplayer localhost "$PORT" &
+dotnet run --no-build --project HiveOnline -- localhost "$PORT" &
 pids+=($!)
-dotnet run --no-build --project HiveOnline -- multiplayer localhost "$PORT" &
+dotnet run --no-build --project HiveOnline -- localhost "$PORT" &
 pids+=($!)
 
 wait

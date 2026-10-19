@@ -64,6 +64,7 @@ namespace HiveOnline
             }
             _rules = new HiveGameState(_board, BugTeam.Light);
             _view = new BoardViewState(screenWidth, screenHeight);
+            _view.ChatVisible = _networkClient != null;
             _boardRenderer = new BoardRenderer();
             _boardRenderer.Resize(_view, _board);
             _ai = new SimpleAI(_board);

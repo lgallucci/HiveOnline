@@ -90,6 +90,20 @@ namespace HiveGraphics
             SpriteBatch.DrawString(Art.NameFont, text, new Vector2((ScreenSize.X / 2) - fontSize.X / 2, (ScreenSize.Y / 2) - fontSize.Y / 2), color);
         }
 
+        public void DrawButton(Rectangle bounds, string text, bool hovered)
+        {
+            SpriteBatch.Draw(Art.Pixel, bounds, hovered ? new Color(60, 120, 90) : new Color(26, 50, 38));
+            var border = hovered ? Color.DeepPink : Color.MintCream;
+            SpriteBatch.Draw(Art.Pixel, new Rectangle(bounds.X, bounds.Y, bounds.Width, 2), border);
+            SpriteBatch.Draw(Art.Pixel, new Rectangle(bounds.X, bounds.Bottom - 2, bounds.Width, 2), border);
+            SpriteBatch.Draw(Art.Pixel, new Rectangle(bounds.X, bounds.Y, 2, bounds.Height), border);
+            SpriteBatch.Draw(Art.Pixel, new Rectangle(bounds.Right - 2, bounds.Y, 2, bounds.Height), border);
+
+            var size = Art.NameFont.MeasureString(text);
+            SpriteBatch.DrawString(Art.NameFont, text,
+                new Vector2(bounds.X + (bounds.Width - size.X) / 2, bounds.Y + (bounds.Height - size.Y) / 2), Color.White);
+        }
+
         public void DrawStringTop(string text, Color color)
         {
             var fontSize = Art.NameFont.MeasureString(text);

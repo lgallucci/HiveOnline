@@ -55,8 +55,9 @@ public sealed class BoardRenderer
 
         DrawPile(board.UserPile, view, false);
         DrawPile(board.OpponentPile, view, true);
-        _chatGraphics.Draw(board.ChatWindow.TypingText, board.ChatWindow.IsTyping,
-            board.ChatWindow.ChatMessages, board.ChatWindow.IsCollapsed, board.ChatWindow.HasUnread);
+        if (view.ChatVisible)
+            _chatGraphics.Draw(board.ChatWindow.TypingText, board.ChatWindow.IsTyping,
+                board.ChatWindow.ChatMessages, board.ChatWindow.IsCollapsed, board.ChatWindow.HasUnread);
 
         if (board.SelectedTile != null)
         {
