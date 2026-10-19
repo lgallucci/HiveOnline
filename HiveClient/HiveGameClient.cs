@@ -27,6 +27,14 @@ namespace HiveClient
         public bool UseTls { get; init; }
         public string ServerKeyPin { get; init; }
 
+        // A player-friendly description of why the connection is currently down; null while connected or still
+        // making the first attempt. The client keeps retrying in the background.
+        public string ConnectionProblem => _connectionProblem;
+        private volatile string _connectionProblem;
+
+        public string Address => _address;
+        public int Port => _port;
+
         public HiveGameClient(string address, int port)
         {
             _address = address;
@@ -44,6 +52,13 @@ namespace HiveClient
                 Port = _port,
                 ConnectedCallback = ClientConnected,
                 ReceivedCallback = ClientReceived
+            };
+
+            _tcpClient.Message += OnTransportMessage;
+            _tcpClient.ClosedCallback = (_, remote) =>
+            {
+                if (remote)
+                    _connectionProblem = "Connection to the server was lost.";
             };
 
             if (UseTls)
@@ -64,6 +79,26 @@ namespace HiveClient
             });
 
             await _tcpClient.RunAsync();
+        }
+
+        private void OnTransportMessage(object sender, AsyncTcpEventArgs e)
+        {
+            switch (e.Message)
+            {
+                case "Connection timeout":
+                    _connectionProblem = $"Connecting to {_address}:{_port} timed out.";
+                    break;
+                case "Error connecting to remote host":
+                    _connectionProblem = $"Could not reach the server at {_address}:{_port}.";
+                    break;
+                case "Secure connection setup failed":
+                    _connectionProblem = "Could not establish a secure connection. The server may be unencrypted, or its identity did not match.";
+                    break;
+                case "Connection reset remotely":
+                case "Connection aborted":
+                    _connectionProblem = "Connection to the server was lost.";
+                    break;
+            }
         }
 
         private bool ValidateServerCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors errors)
@@ -94,6 +129,7 @@ namespace HiveClient
         private async Task ClientConnected(AsyncTcpClient client, bool isReconnect)
         {
             _messageFramer.Reset();
+            _connectionProblem = null;
             Console.WriteLine($"Connected! {(isReconnect ? "isReconnect" : "")}");
             await SendMessage("HELLO");
         }

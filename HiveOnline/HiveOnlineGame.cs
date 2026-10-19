@@ -202,7 +202,7 @@ namespace HiveOnline
                 }
                 if (_gameState == GameState.OpeningScreen && _previousState != GameState.OpeningScreen)
                 {
-                    if (_gameEngine is RunningGameEngine && _hiveClient != null)
+                    if (_gameEngine is RunningGameEngine or ConnectToServerEngine && _hiveClient != null)
                         LeaveServerGracefully();
                     Window.Title = "Hive";
                     _gameEngine = new OpeningScreenEngine();

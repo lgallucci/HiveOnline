@@ -298,8 +298,18 @@ namespace Unclassified.Net
 		/// </summary>
 		public void Disconnect()
 		{
-			if (tcpClient?.Client != null)
-				tcpClient.Client.Disconnect(false);
+			try
+			{
+				if (tcpClient?.Client != null)
+					tcpClient.Client.Disconnect(false);
+			}
+			catch (SocketException)
+			{
+				// Not connected (e.g. cancelled while still trying to connect): nothing to close.
+			}
+			catch (ObjectDisposedException)
+			{
+			}
 		}
 
 		/// <summary>

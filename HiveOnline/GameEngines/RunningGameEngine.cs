@@ -408,8 +408,20 @@ namespace HiveOnline
             ProcessNetworkMessages();
         }
 
+        private bool _connectionLost;
+
         private void ProcessNetworkMessages()
         {
+            if (IsNetworkGame && !_connectionLost && !GameOver && !_networkClient.IsConnected)
+            {
+                // The server ends the game when we drop, so there is nothing to resume.
+                _connectionLost = true;
+                _opponentLeft = true;
+                _playingState = PlayingState.Lost;
+                DeselectAll();
+                _board.CurrentTurn = "Connection to the server was lost. The game has ended.";
+            }
+
             while (_networkClient != null && _networkClient.IsConnected && _pendingNetworkMessages.TryDequeue(out var message))
                 ProcessIncomingNetworkMessage(message);
 

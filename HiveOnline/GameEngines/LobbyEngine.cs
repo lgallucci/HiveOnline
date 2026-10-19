@@ -22,6 +22,8 @@ namespace HiveOnline.GameEngines
         private int _assignedTeam = -1;
         private string _opponentName = "Opponent";
         private bool _left;
+        private bool _connectionLost;
+        private readonly string _playerName;
         private int _width = 800;
         private MouseState _previousMouse = Mouse.GetState();
 
@@ -34,6 +36,7 @@ namespace HiveOnline.GameEngines
         public LobbyEngine(HiveGameClient client, string playerName)
         {
             _client = client;
+            _playerName = playerName;
             _client.MessageReceived += OnMessage;
             _ = EnterAsync(playerName);
         }
@@ -54,6 +57,25 @@ namespace HiveOnline.GameEngines
 
         private void ProcessMessages(ref GameState gameState)
         {
+            if (!_client.IsConnected)
+            {
+                // The server forgets us when the connection drops, so rejoin the lobby after reconnecting.
+                _connectionLost = true;
+                _players.Clear();
+                _incoming.Clear();
+                _challengedId = null;
+                _status = (_client.ConnectionProblem ?? "Connection to the server was lost.") + " Reconnecting...";
+                while (_messages.TryDequeue(out _)) { }
+                return;
+            }
+
+            if (_connectionLost)
+            {
+                _connectionLost = false;
+                _status = "Reconnected";
+                _ = EnterAsync(_playerName);
+            }
+
             while (_messages.TryDequeue(out var message))
             {
                 var fields = message.Split('|');
