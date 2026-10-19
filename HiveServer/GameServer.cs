@@ -21,6 +21,15 @@ namespace HiveServer
         private AsyncTcpListener _listener;
         private readonly int _port;
 
+        // Verbose logging of connections, matches, moves and disconnects for manual testing.
+        public bool TestMode { get; set; }
+
+        private void Trace(string message)
+        {
+            if (TestMode)
+                Console.WriteLine($"[TEST {DateTime.Now:HH:mm:ss.fff}] {message}");
+        }
+
         public GameServer() : this(GetConfiguredPort())
         {
         }
@@ -54,6 +63,7 @@ namespace HiveServer
                 _clients.Add(client);
             }
 
+            Trace($"Clients connected: {_clients.Count}");
             await client.RunAsync();
         }
 
@@ -66,6 +76,12 @@ namespace HiveServer
             if (normalized.StartsWith("MOVE|", StringComparison.OrdinalIgnoreCase))
             {
                 await RouteMove(client, normalized);
+                return;
+            }
+
+            if (normalized.StartsWith("CHAT|", StringComparison.OrdinalIgnoreCase))
+            {
+                await RouteChat(client, normalized);
                 return;
             }
 
@@ -134,6 +150,7 @@ namespace HiveServer
             await playerTwo.SendMessage("YOU_ARE_PLAYER_2");
 
             Console.WriteLine($"Matched players in game {game.Id}");
+            Trace($"Game {game.Id}: LIGHT={playerOne.Identifier} DARK={playerTwo.Identifier}");
         }
 
         private async Task RouteMove(ConnectedHiveClient client, string message)
@@ -159,6 +176,7 @@ namespace HiveServer
                 return;
             }
 
+            Trace($"Move from {client.Identifier}: {message} -> {(result.IsValid ? "accepted" : result.ErrorCode)}");
             if (!result.IsValid)
             {
                 await client.SendMessage($"MOVE_REJECTED {result.ErrorCode}");
@@ -166,6 +184,24 @@ namespace HiveServer
             }
 
             await opponent.SendMessage(message);
+        }
+
+        private async Task RouteChat(ConnectedHiveClient client, string message)
+        {
+            ConnectedHiveClient opponent = null;
+            lock (_syncRoot)
+            {
+                opponent = client.CurrentGame?.GetOpponent(client);
+            }
+
+            if (opponent == null)
+            {
+                await client.SendMessage("ERROR NOT_IN_GAME");
+                return;
+            }
+
+            Trace($"Chat from {client.Identifier}: {message}");
+            await opponent.SendMessage(message.Length > 305 ? message.Substring(0, 305) : message);
         }
 
         private static bool TryParseMove(string message, BugTeam senderTeam, out HiveMove move)
@@ -226,6 +262,7 @@ namespace HiveServer
                 }
             }
 
+            Trace($"Clients connected: {_clients.Count}, active games: {_games.Count}");
             if (opponent != null)
                 _ = opponent.SendMessage("OPPONENT_DISCONNECTED");
         }

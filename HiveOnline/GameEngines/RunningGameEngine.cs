@@ -39,6 +39,8 @@ namespace HiveOnline
         private readonly HiveGameClient _networkClient;
         private readonly ConcurrentQueue<string> _pendingNetworkMessages = new ConcurrentQueue<string>();
         private BugTeam _playerTeam;
+        private readonly BugTeam _opponentTeam;
+        private bool IsNetworkGame => _networkClient != null;
 
         // Game rule tracking
         private int _playerTurnCount = 0;  // Light player's turn count
@@ -53,8 +55,14 @@ namespace HiveOnline
             _networkClient = networkClient;
             _useAI = useAi;
             _playerTeam = team;
+            _opponentTeam = team == BugTeam.Light ? BugTeam.Dark : BugTeam.Light;
             _board = new PlayingBoard();
-            _rules = new HiveGameState(_board, team);
+            if (team == BugTeam.Dark)
+            {
+                // The local player's pile is always the one drawn at the bottom of the screen.
+                (_board.UserPile, _board.OpponentPile) = (_board.OpponentPile, _board.UserPile);
+            }
+            _rules = new HiveGameState(_board, BugTeam.Light);
             _view = new BoardViewState(screenWidth, screenHeight);
             _boardRenderer = new BoardRenderer();
             _boardRenderer.Resize(_view, _board);
@@ -62,6 +70,9 @@ namespace HiveOnline
 
             if (_networkClient != null)
             {
+                _board.ChatWindow.ChatMessages.Clear();
+                _board.UserName = $"You ({team})";
+                _board.OpponentName = $"Opponent ({_opponentTeam})";
                 _networkClient.MessageReceived += message =>
                 {
                     if (!string.IsNullOrWhiteSpace(message))
@@ -157,7 +168,7 @@ namespace HiveOnline
                     if (bug.Team == _playerTeam)
                     {
                         _board.SelectedTile = bug;
-                        _board.AddAvailableHexes(_board.UserPile.CalculateAvailable(_board));
+                        _board.AddAvailableHexes(_board.UserPile.CalculateAvailable(_board, _playerTeam));
                     }
                 }
             }
@@ -190,6 +201,13 @@ namespace HiveOnline
                             {
                                 SwitchTurns();
                                 CheckWinCondition();
+                            }
+                            else if (IsNetworkGame)
+                            {
+                                _playerTurnCount++;
+                                _playingState = PlayingState.OpponentsTurn;
+                                UpdateTurnDisplay();
+                                CheckNetworkResult();
                             }
 
                             topMost = default(Hex); bottomMost = default(Hex); leftMost = default(Hex); rightMost = default(Hex);
@@ -259,6 +277,8 @@ namespace HiveOnline
             _view.SetLayout(originalSize, originHexPoint);
         }
 
+        public override void UpdateInactive(GameTime gameTime, ref GameState _gameState) => ProcessNetworkMessages();
+
         private void ProcessNetworkMessages()
         {
             while (_networkClient != null && _networkClient.IsConnected && _pendingNetworkMessages.TryDequeue(out var message))
@@ -271,6 +291,9 @@ namespace HiveOnline
             {
                 if (!string.IsNullOrWhiteSpace(_board.ChatWindow.TypingText))
                 {
+                    if (_networkClient != null && _networkClient.IsConnected)
+                        _ = _networkClient.SendChat(_board.ChatWindow.TypingText);
+
                     _board.ChatWindow.ChatMessages.Push(new ChatMessage
                     {
                         Message = _board.ChatWindow.TypingText,
@@ -370,6 +393,37 @@ namespace HiveOnline
             if (string.IsNullOrWhiteSpace(message))
                 return;
 
+            if (message.Equals("OPPONENT_DISCONNECTED", StringComparison.OrdinalIgnoreCase))
+            {
+                if (_playingState != PlayingState.Won && _playingState != PlayingState.Lost)
+                {
+                    _playingState = PlayingState.Won;
+                    _board.CurrentTurn = "Opponent disconnected. You win!";
+                }
+                return;
+            }
+
+            if (message.StartsWith("CHAT|", StringComparison.OrdinalIgnoreCase))
+            {
+                var text = message.Substring(5);
+                if (!string.IsNullOrWhiteSpace(text))
+                {
+                    _board.ChatWindow.ChatMessages.Push(new ChatMessage
+                    {
+                        Message = text,
+                        PlayerName = _board.OpponentName,
+                        PlayerTeam = 2
+                    });
+                }
+                return;
+            }
+
+            if (message.StartsWith("MOVE_REJECTED", StringComparison.OrdinalIgnoreCase))
+            {
+                _board.CurrentTurn = message;
+                return;
+            }
+
             if (!message.StartsWith("MOVE|", StringComparison.OrdinalIgnoreCase))
                 return;
 
@@ -402,12 +456,15 @@ namespace HiveOnline
                 if (!TryApplyMove(remoteTile, fromHex, toHex, team, out _))
                     return;
 
-                if (team == BugTeam.Dark)
+                if (team == _opponentTeam)
                 {
                     _opponentTurnCount++;
                     _playingState = PlayingState.YourTurn;
                     UpdateTurnDisplay();
-                    CheckWinCondition();
+                    if (IsNetworkGame)
+                        CheckNetworkResult();
+                    else
+                        CheckWinCondition();
                 }
             }
             catch
@@ -425,17 +482,29 @@ namespace HiveOnline
                     return existing;
             }
 
-            if (team == BugTeam.Light)
-            {
-                return _board.UserPile.Peek(bugType);
-            }
-
-            if (team == BugTeam.Dark)
-            {
-                return _board.OpponentPile.Peek(bugType);
-            }
+            if (team == BugTeam.Light || team == BugTeam.Dark)
+                return PileFor(team).Peek(bugType);
 
             return null;
+        }
+
+        private Pile PileFor(BugTeam team) => _board.UserPile.Team == team ? _board.UserPile : _board.OpponentPile;
+
+        private void CheckNetworkResult()
+        {
+            if (!_rules.IsFinished)
+                return;
+
+            if (_rules.WinningTeam == _playerTeam)
+            {
+                _playingState = PlayingState.Won;
+                _board.CurrentTurn = "You won! Opponent's Queen is surrounded!";
+            }
+            else
+            {
+                _playingState = PlayingState.Lost;
+                _board.CurrentTurn = "You lost! Your Queen is surrounded!";
+            }
         }
 
         private bool TryApplyMove(ITile requestedTile, Hex from, Hex destination,
@@ -445,6 +514,8 @@ namespace HiveOnline
             {
                 var result = _rules.TryApplyMove(new HiveMove(team, requestedTile.Type, from, destination));
                 appliedTile = result.IsValid ? _board.Tiles[destination.GetHashCode()] : null;
+                if (appliedTile != null)
+                    OnPiecePlaced(appliedTile);
                 return result.IsValid;
             }
 
@@ -456,7 +527,7 @@ namespace HiveOnline
 
             if (isPlacement)
             {
-                var pile = team == BugTeam.Light ? _board.UserPile : _board.OpponentPile;
+                var pile = PileFor(team);
                 if (MustPlayQueen(requestedTile) || !pile.CalculateAvailable(_board, team).Any(hex => hex == destination))
                     return false;
 
@@ -548,7 +619,7 @@ namespace HiveOnline
         private bool CanMoveAnyPiece(BugTeam team)
         {
             // Can't move pieces until your Queen is placed
-            if (team == BugTeam.Light)
+            if (team == _playerTeam)
                 return _playerQueenPlaced;
             else
                 return _opponentQueenPlaced;
@@ -559,7 +630,7 @@ namespace HiveOnline
             // Track if this is a Queen
             if (placedPiece.Type == BugType.QueenBee)
             {
-                if (placedPiece.Team == BugTeam.Light)
+                if (placedPiece.Team == _playerTeam)
                     _playerQueenPlaced = true;
                 else
                     _opponentQueenPlaced = true;

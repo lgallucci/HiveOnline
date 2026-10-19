@@ -5,6 +5,7 @@ using HiveOnline.GameEngines;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
+using System.Threading.Tasks;
 
 namespace HiveOnline
 {
@@ -19,8 +20,9 @@ namespace HiveOnline
     {
         private readonly GameMode _gameMode;
         private HiveGameClient _hiveClient;
-        private string _address = string.Empty;
-        private int _port = 60000;
+        private readonly string _address;
+        private readonly int _port;
+        private Task _connectTask;
 
         private GraphicsEngine _graphicsEngine;
         private GameEngine _gameEngine;
@@ -32,9 +34,11 @@ namespace HiveOnline
         int frameCount = 0;
         TimeSpan frameTimer = new TimeSpan(0);
 
-        public HiveOnlineGame(GameMode gameMode = GameMode.LocalAi)
+        public HiveOnlineGame(GameMode gameMode = GameMode.LocalAi, string address = "localhost", int port = 7777)
         {
             _gameMode = gameMode;
+            _address = address;
+            _port = port;
             _graphicsEngine = new GraphicsEngine(this);
 
             Content.RootDirectory = "Content";
@@ -78,13 +82,29 @@ namespace HiveOnline
         /// </summary>
         protected override void LoadContent()
         {
-            _gameEngine = new OpeningScreenEngine();
+            _gameEngine = new OpeningScreenEngine(_gameMode == GameMode.Multiplayer);
             if (_gameMode == GameMode.Multiplayer)
             {
                 _hiveClient = new HiveGameClient(_address, _port);
             }
             SetWindowSize();
             _graphicsEngine.Load(GraphicsDevice, Content);
+        }
+
+        protected override void OnExiting(object sender, EventArgs args)
+        {
+            if (_hiveClient != null)
+            {
+                try
+                {
+                    _hiveClient.SendMessage("BYE").Wait(1000);
+                }
+                catch (Exception)
+                {
+                }
+                _hiveClient.Dispose();
+            }
+            base.OnExiting(sender, args);
         }
 
         /// <summary>
@@ -106,10 +126,13 @@ namespace HiveOnline
             //if (Keyboard.GetState().IsKeyDown(Keys.Escape))
             //    Exit();
 
-            if (IsActive)
+            if (IsActive || _gameMode == GameMode.Multiplayer)
             {
                 GameState _previousState = _gameState;
-                _gameEngine.Update(gameTime, ref _gameState);
+                if (IsActive)
+                    _gameEngine.Update(gameTime, ref _gameState);
+                else
+                    _gameEngine.UpdateInactive(gameTime, ref _gameState);
 
                 // if (_gameMode != GameMode.Multiplayer && _gameState == GameState.OpeningScreen && _previousState == GameState.OpeningScreen)
                 // {
@@ -120,12 +143,22 @@ namespace HiveOnline
                 {
                     var useAi = _gameMode == GameMode.LocalAi;
                     var networkClient = _gameMode == GameMode.Multiplayer ? _hiveClient : null;
-                    _gameEngine = new RunningGameEngine(_screenWidth, _screenHeight, BugTeam.Light, networkClient, useAi);
+                    var team = BugTeam.Light;
+                    if (_gameEngine is ConnectToServerEngine connectEngine)
+                    {
+                        team = connectEngine.AssignedTeam;
+                        Window.Title = $"Hive - {team}";
+                    }
+                    _gameEngine = new RunningGameEngine(_screenWidth, _screenHeight, team, networkClient, useAi);
+                    SetWindowSize();
                 }
                 if (_gameState == GameState.OpeningScreen && _previousState != GameState.OpeningScreen)
-                    _gameEngine = new OpeningScreenEngine();
+                    _gameEngine = new OpeningScreenEngine(_gameMode == GameMode.Multiplayer);
                 if (_gameState == GameState.ConnectToServer && _previousState != GameState.ConnectToServer)
-                    _gameEngine = new ConnectToServerEngine();
+                {
+                    _connectTask ??= Task.Run(() => _hiveClient.ConnectAsync());
+                    _gameEngine = new ConnectToServerEngine(_hiveClient);
+                }
             }
             base.Update(gameTime);
         }

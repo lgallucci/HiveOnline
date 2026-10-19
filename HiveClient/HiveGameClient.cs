@@ -82,6 +82,13 @@ namespace HiveClient
             await SendMessage(payload);
         }
 
+        public async Task SendChat(string text)
+        {
+            var clean = text.Replace("\r", " ").Replace("\n", " ").Trim();
+            if (clean.Length > 0)
+                await SendMessage($"CHAT|{clean}");
+        }
+
         public async Task JoinGame() => await SendMessage("JOIN");
 
         public void Disconnect()

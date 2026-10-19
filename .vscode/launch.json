@@ -10,6 +10,58 @@
       "cwd": "${workspaceFolder}/HiveOnline",
       "console": "internalConsole",
       "justMyCode": true
+    },
+    {
+      "name": "Hive Server (test mode)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build HiveServer",
+      "program": "${workspaceFolder}/HiveServer/bin/Debug/net10.0/HiveServer.dll",
+      "args": [
+        "--test",
+        "7777"
+      ],
+      "cwd": "${workspaceFolder}/HiveServer",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Hive Client 1 (multiplayer)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build HiveOnline",
+      "program": "${workspaceFolder}/HiveOnline/bin/Debug/net10.0/linux-x64/HiveOnline.dll",
+      "args": [
+        "multiplayer",
+        "localhost",
+        "7777"
+      ],
+      "cwd": "${workspaceFolder}/HiveOnline/bin/Debug/net10.0/linux-x64",
+      "console": "internalConsole"
+    },
+    {
+      "name": "Hive Client 2 (multiplayer)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build HiveOnline",
+      "program": "${workspaceFolder}/HiveOnline/bin/Debug/net10.0/linux-x64/HiveOnline.dll",
+      "args": [
+        "multiplayer",
+        "localhost",
+        "7777"
+      ],
+      "cwd": "${workspaceFolder}/HiveOnline/bin/Debug/net10.0/linux-x64",
+      "console": "internalConsole"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Online Test: Server + 2 Clients",
+      "configurations": [
+        "Hive Server (test mode)",
+        "Hive Client 1 (multiplayer)",
+        "Hive Client 2 (multiplayer)"
+      ],
+      "stopAll": true
     }
   ]
 }

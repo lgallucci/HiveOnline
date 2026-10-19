@@ -1,0 +1,25 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build HiveServer",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "${workspaceFolder}/HiveServer/HiveServer.csproj"
+      ],
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "build HiveOnline",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "${workspaceFolder}/HiveOnline/HiveOnline.csproj"
+      ],
+      "problemMatcher": "$msCompile"
+    }
+  ]
+}

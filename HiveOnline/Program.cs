@@ -13,13 +13,16 @@ namespace HiveOnline
     {
         static void Main(string[] args)
         {
-            var mode = ParseMode(args);
-            new HiveOnlineGame(mode).Run();
+            var modeArg = args.Length > 0 ? args : new[] { Environment.GetEnvironmentVariable("HIVE_MODE") ?? "" };
+            var mode = ParseMode(modeArg);
+            var host = args.Length > 1 ? args[1] : "localhost";
+            var port = args.Length > 2 && int.TryParse(args[2], out var parsedPort) ? parsedPort : 7777;
+            new HiveOnlineGame(mode, host, port).Run();
         }
 
         private static GameMode ParseMode(string[] args)
         {
-            if (args.Length == 0)
+            if (args.Length == 0 || string.IsNullOrWhiteSpace(args[0]))
                 return GameMode.LocalAi;
 
             var value = args[0].Trim();

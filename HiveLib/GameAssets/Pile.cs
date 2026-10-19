@@ -21,6 +21,7 @@ namespace HiveOnline.GameAssets
         public Stack<SoldierAnt> SoldierAnts { get; set; }
         public Stack<Spider> Spiders { get; set; }
         private BugTeam _team { get; set; }
+        public BugTeam Team => _team;
 
         public Pile(BugTeam team,
                     int beetleCount = 2,

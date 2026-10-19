@@ -127,6 +127,27 @@ public class TwoClientTests
     }
 
     [TestMethod]
+    public async Task ChatIsRelayedBothWays()
+    {
+        var (a, b) = await StartMatch();
+
+        await a.Client.SendChat("hello from light");
+        await b.WaitFor(m => m == "CHAT|hello from light");
+        await b.Client.SendChat("hi from dark");
+        await a.WaitFor(m => m == "CHAT|hi from dark");
+    }
+
+    [TestMethod]
+    public async Task ChatWithoutGameIsRejected()
+    {
+        var a = await Connect();
+
+        await a.Client.SendChat("anyone?");
+
+        await a.WaitFor(m => m == "ERROR NOT_IN_GAME");
+    }
+
+    [TestMethod]
     public async Task OpponentIsNotifiedOnDisconnect()
     {
         var (a, b) = await StartMatch();

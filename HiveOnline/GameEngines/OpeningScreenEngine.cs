@@ -11,9 +11,16 @@ namespace HiveOnline.GameEngines
 {
     class OpeningScreenEngine : GameEngine
     {
+        private readonly bool _multiplayer;
+
+        public OpeningScreenEngine(bool multiplayer = false)
+        {
+            _multiplayer = multiplayer;
+        }
+
         public override void Draw(GraphicsEngine _graphicsEngine)
         {
-            _graphicsEngine.DrawStringCentered("HIVE !   Click to play...", Color.DeepPink);
+            _graphicsEngine.DrawStringCentered(_multiplayer ? "HIVE !   Click to join an online game..." : "HIVE !   Click to play...", Color.DeepPink);
         }
 
         public override void SetScreenSize(int screenWidth, int screenHeight)
@@ -27,7 +34,7 @@ namespace HiveOnline.GameEngines
 
             if (mouseState.LeftButton == ButtonState.Pressed)
             {
-                _gameState = GameState.Playing;
+                _gameState = _multiplayer ? GameState.ConnectToServer : GameState.Playing;
             }
         }
     }

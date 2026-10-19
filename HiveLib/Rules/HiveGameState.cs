@@ -103,7 +103,7 @@ public sealed class HiveGameState
         return true;
     }
 
-    private Pile GetPile(BugTeam team) => team == BugTeam.Light ? Board.UserPile : Board.OpponentPile;
+    private Pile GetPile(BugTeam team) => Board.UserPile.Team == team ? Board.UserPile : Board.OpponentPile;
 
     private static BugTeam Opponent(BugTeam team) => team == BugTeam.Light ? BugTeam.Dark : BugTeam.Light;
 
