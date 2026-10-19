@@ -17,6 +17,7 @@ namespace HiveServer
 
         public Guid Identifier { get; }
         public HiveGame? CurrentGame { get; set; }
+        public bool WantsRematch { get; set; }
 
         public string RemoteEndpoint => tcpClient?.ServerTcpClient?.Client?.RemoteEndPoint?.ToString() ?? "unknown";
 

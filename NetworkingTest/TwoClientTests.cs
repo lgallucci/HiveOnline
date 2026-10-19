@@ -148,6 +148,26 @@ public class TwoClientTests
     }
 
     [TestMethod]
+    public async Task RematchBeforeGameIsOverIsRejected()
+    {
+        var (a, _) = await StartMatch();
+
+        await a.Client.SendMessage("REMATCH");
+
+        await a.WaitFor(m => m == "ERROR GAME_NOT_FINISHED");
+    }
+
+    [TestMethod]
+    public async Task RematchWithoutGameIsRejected()
+    {
+        var a = await Connect();
+
+        await a.Client.SendMessage("REMATCH");
+
+        await a.WaitFor(m => m == "ERROR NOT_IN_GAME");
+    }
+
+    [TestMethod]
     public async Task OpponentIsNotifiedOnDisconnect()
     {
         var (a, b) = await StartMatch();

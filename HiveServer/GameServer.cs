@@ -96,6 +96,9 @@ namespace HiveServer
                 case "JOIN":
                     await QueueForMatch(client);
                     break;
+                case "REMATCH":
+                    await RequestRematch(client);
+                    break;
                 case "BYE":
                     client.Disconnect();
                     break;
@@ -184,6 +187,49 @@ namespace HiveServer
             }
 
             await opponent.SendMessage(message);
+        }
+
+        private async Task RequestRematch(ConnectedHiveClient client)
+        {
+            ConnectedHiveClient opponent = null;
+            string error = null;
+            var start = false;
+
+            lock (_syncRoot)
+            {
+                var game = client.CurrentGame;
+                if (game == null)
+                    error = "ERROR NOT_IN_GAME";
+                else if (!game.State.IsFinished)
+                    error = "ERROR GAME_NOT_FINISHED";
+                else
+                {
+                    opponent = game.GetOpponent(client);
+                    client.WantsRematch = true;
+                    if (opponent.WantsRematch)
+                    {
+                        game.Reset();
+                        start = true;
+                    }
+                }
+            }
+
+            if (error != null)
+            {
+                await client.SendMessage(error);
+                return;
+            }
+
+            Trace($"Rematch requested by {client.Identifier} (start={start})");
+            if (start)
+            {
+                await client.SendMessage("REMATCH_START");
+                await opponent.SendMessage("REMATCH_START");
+            }
+            else
+            {
+                await opponent.SendMessage("REMATCH_REQUESTED");
+            }
         }
 
         private async Task RouteChat(ConnectedHiveClient client, string message)

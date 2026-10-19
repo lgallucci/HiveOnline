@@ -23,6 +23,7 @@ namespace HiveOnline
         private readonly string _address;
         private readonly int _port;
         private Task _connectTask;
+        private BugTeam _team = BugTeam.Light;
 
         private GraphicsEngine _graphicsEngine;
         private GameEngine _gameEngine;
@@ -141,13 +142,19 @@ namespace HiveOnline
                 {
                     var useAi = _gameMode == GameMode.LocalAi;
                     var networkClient = _gameMode == GameMode.Multiplayer ? _hiveClient : null;
-                    var team = BugTeam.Light;
                     if (_gameEngine is ConnectToServerEngine connectEngine)
                     {
-                        team = connectEngine.AssignedTeam;
-                        Window.Title = $"Hive - {team}";
+                        _team = connectEngine.AssignedTeam;
+                        Window.Title = $"Hive - {_team}";
                     }
-                    _gameEngine = new RunningGameEngine(_screenWidth, _screenHeight, team, networkClient, useAi);
+                    _gameEngine = new RunningGameEngine(_screenWidth, _screenHeight, _team, networkClient, useAi);
+                    SetWindowSize();
+                }
+                if (_gameEngine is RunningGameEngine finished && finished.RestartRequested)
+                {
+                    finished.Detach();
+                    var rematchClient = _gameMode == GameMode.Multiplayer ? _hiveClient : null;
+                    _gameEngine = new RunningGameEngine(_screenWidth, _screenHeight, _team, rematchClient, _gameMode == GameMode.LocalAi);
                     SetWindowSize();
                 }
                 if (_gameState == GameState.OpeningScreen && _previousState != GameState.OpeningScreen)

@@ -39,6 +39,12 @@ namespace HiveOnline
         private readonly HiveGameClient _networkClient;
         private readonly ConcurrentQueue<string> _pendingNetworkMessages = new ConcurrentQueue<string>();
         private BugTeam _playerTeam;
+        private bool _opponentLeft;
+        private bool _rematchRequestedByMe;
+        private bool _rematchRequestedByOpponent;
+        private readonly Action<string> _messageHandler;
+
+        public bool RestartRequested { get; private set; }
         private readonly BugTeam _opponentTeam;
         private bool IsNetworkGame => _networkClient != null;
 
@@ -74,11 +80,12 @@ namespace HiveOnline
                 _board.ChatWindow.ChatMessages.Clear();
                 _board.UserName = $"You ({team})";
                 _board.OpponentName = $"Opponent ({_opponentTeam})";
-                _networkClient.MessageReceived += message =>
+                _messageHandler = message =>
                 {
                     if (!string.IsNullOrWhiteSpace(message))
                         _pendingNetworkMessages.Enqueue(message);
                 };
+                _networkClient.MessageReceived += _messageHandler;
             }
 
             if (team == BugTeam.Light)
@@ -106,9 +113,47 @@ namespace HiveOnline
             _boardRenderer.Resize(_view, _board);
         }
 
+        public void Detach()
+        {
+            if (_networkClient != null && _messageHandler != null)
+                _networkClient.MessageReceived -= _messageHandler;
+        }
+
+        private bool GameOver => _playingState == PlayingState.Won || _playingState == PlayingState.Lost;
+
+        // In multiplayer a rematch is impossible once the opponent has left.
+        private bool CanRematch => GameOver && !_opponentLeft;
+
+        private Microsoft.Xna.Framework.Rectangle RematchButton => new Microsoft.Xna.Framework.Rectangle(_view.ScreenSize.X / 2 - 150, 60, 300, 50);
+
+        private string RematchLabel => _rematchRequestedByMe ? "Waiting for opponent..."
+            : _rematchRequestedByOpponent ? "Opponent wants a rematch!" : "Rematch";
+
         public override void Draw(HiveGraphics.GraphicsEngine _graphicsEngine)
         {
             _boardRenderer.Draw(_board, _view, _graphicsEngine.Context);
+
+            if (CanRematch)
+            {
+                var mouse = Mouse.GetState();
+                _graphicsEngine.DrawButton(RematchButton, RematchLabel, !_rematchRequestedByMe && RematchButton.Contains(mouse.X, mouse.Y));
+            }
+        }
+
+        private void HandleRematchClick()
+        {
+            if (_rematchRequestedByMe)
+                return;
+
+            if (IsNetworkGame)
+            {
+                _rematchRequestedByMe = true;
+                _ = _networkClient.SendMessage("REMATCH");
+            }
+            else
+            {
+                RestartRequested = true;
+            }
         }
 
         private Hex leftMost, rightMost, topMost, bottomMost;
@@ -139,6 +184,8 @@ namespace HiveOnline
                 // Chat stays usable after the game is over.
                 if (leftClicked && _view.ContainsChat(mouseState.X, mouseState.Y))
                     HandleChatClick(mouseState);
+                else if (leftClicked && CanRematch && RematchButton.Contains(mouseState.X, mouseState.Y))
+                    HandleRematchClick();
 
                 _view.SetLayout(originalSize, originHexPoint);
                 return;
@@ -427,8 +474,21 @@ namespace HiveOnline
             if (string.IsNullOrWhiteSpace(message))
                 return;
 
+            if (message.Equals("REMATCH_START", StringComparison.OrdinalIgnoreCase))
+            {
+                RestartRequested = true;
+                return;
+            }
+
+            if (message.Equals("REMATCH_REQUESTED", StringComparison.OrdinalIgnoreCase))
+            {
+                _rematchRequestedByOpponent = true;
+                return;
+            }
+
             if (message.Equals("OPPONENT_DISCONNECTED", StringComparison.OrdinalIgnoreCase))
             {
+                _opponentLeft = true;
                 if (_playingState != PlayingState.Won && _playingState != PlayingState.Lost)
                 {
                     _playingState = PlayingState.Won;

@@ -12,12 +12,19 @@ namespace HiveServer
 
         public ConnectedHiveClient PlayerOne { get; }
         public ConnectedHiveClient PlayerTwo { get; }
-        public HiveGameState State { get; } = new HiveGameState();
+        public HiveGameState State { get; private set; } = new HiveGameState();
 
         public HiveGame(ConnectedHiveClient playerOne, ConnectedHiveClient playerTwo)
         {
             PlayerOne = playerOne ?? throw new ArgumentNullException(nameof(playerOne));
             PlayerTwo = playerTwo ?? throw new ArgumentNullException(nameof(playerTwo));
+        }
+
+        public void Reset()
+        {
+            State = new HiveGameState();
+            PlayerOne.WantsRematch = false;
+            PlayerTwo.WantsRematch = false;
         }
 
         public IReadOnlyCollection<ConnectedHiveClient> Players => new[] { PlayerOne, PlayerTwo };
