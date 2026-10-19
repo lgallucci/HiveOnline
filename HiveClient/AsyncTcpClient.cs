@@ -313,7 +313,6 @@ namespace Unclassified.Net
 			{
 				sendLock.Release();
 			}
-			sendLock.Dispose();
 		}
 
 		#endregion Public methods
