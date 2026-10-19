@@ -135,6 +135,10 @@ namespace HiveOnline
             // Allow camera movement after the game ends, but block all piece interaction.
             if (HandleCompletedGame(mouseState, ref originHexPoint, ref originalSize))
             {
+                // Chat stays usable after the game is over.
+                if (leftClicked && _view.ContainsChat(mouseState.X, mouseState.Y))
+                    HandleChatClick(mouseState);
+
                 _view.SetLayout(originalSize, originHexPoint);
                 return;
             }
@@ -175,11 +179,8 @@ namespace HiveOnline
             //Enter Chat Box
             else if (_view.ContainsChat(mouseState.X, mouseState.Y))
             {
-                if (leftClicked && !_board.ChatWindow.IsTyping)
-                {
-                    _board.ChatWindow.TypingText = "";
-                    _board.ChatWindow.IsTyping = true;
-                }
+                if (leftClicked)
+                    HandleChatClick(mouseState);
             }
             else if (!draggingCamera && _playingState == PlayingState.YourTurn && _board.AvailableTiles.ContainsKey(clickedHex.GetHashCode()))
             {
@@ -277,12 +278,41 @@ namespace HiveOnline
             _view.SetLayout(originalSize, originHexPoint);
         }
 
-        public override void UpdateInactive(GameTime gameTime, ref GameState _gameState) => ProcessNetworkMessages();
+        public override void UpdateInactive(GameTime gameTime, ref GameState _gameState)
+        {
+            ProcessNetworkMessages();
+        }
 
         private void ProcessNetworkMessages()
         {
             while (_networkClient != null && _networkClient.IsConnected && _pendingNetworkMessages.TryDequeue(out var message))
                 ProcessIncomingNetworkMessage(message);
+        }
+
+        private void HandleChatClick(MouseState mouseState)
+        {
+            if (_view.ChatCollapsed || _view.ChatToggleBounds.Contains(mouseState.X, mouseState.Y))
+            {
+                ToggleChat();
+            }
+            else if (!_board.ChatWindow.IsTyping)
+            {
+                _board.ChatWindow.TypingText = "";
+                _board.ChatWindow.IsTyping = true;
+            }
+        }
+
+        private void ToggleChat()
+        {
+            var chat = _board.ChatWindow;
+            chat.IsCollapsed = !chat.IsCollapsed;
+            _view.ChatCollapsed = chat.IsCollapsed;
+            chat.HasUnread = false;
+            if (chat.IsCollapsed)
+            {
+                chat.IsTyping = false;
+                chat.TypingText = string.Empty;
+            }
         }
 
         private void ApplyChatInput(ChatInputResult input)
@@ -324,6 +354,9 @@ namespace HiveOnline
         {
             if (_playingState != PlayingState.Won && _playingState != PlayingState.Lost)
                 return false;
+
+            if (!draggingCamera && _view.ContainsChat(mouseState.X, mouseState.Y))
+                return true;
 
             HandleCameraInput(mouseState, ref originHexPoint);
 
@@ -414,6 +447,7 @@ namespace HiveOnline
                         PlayerName = _board.OpponentName,
                         PlayerTeam = 2
                     });
+                    _board.ChatWindow.HasUnread = _board.ChatWindow.IsCollapsed;
                 }
                 return;
             }

@@ -12,10 +12,21 @@ public sealed class BoardViewState
     private const int PlacementWidth = 100;
     private const int ChatWidth = 500;
     private const int ChatHeight = 250;
+    public const int ChatCollapsedHeight = 24;
 
     public Point ScreenSize { get; private set; }
     public Layout Layout { get; private set; }
-    public Rectangle ChatBounds => new Rectangle(ScreenSize.X - ChatWidth, ScreenSize.Y - ChatHeight, ChatWidth - 5, ChatHeight - 5);
+    public bool ChatCollapsed { get; set; }
+    public Rectangle ChatBounds
+    {
+        get
+        {
+            var height = ChatCollapsed ? ChatCollapsedHeight + 5 : ChatHeight;
+            return new Rectangle(ScreenSize.X - ChatWidth, ScreenSize.Y - height, ChatWidth - 5, height - 5);
+        }
+    }
+
+    public Rectangle ChatToggleBounds => new Rectangle(ChatBounds.Left, ChatBounds.Top, ChatCollapsedHeight, ChatCollapsedHeight);
 
     public BoardViewState(int width, int height)
     {

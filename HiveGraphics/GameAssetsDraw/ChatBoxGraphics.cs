@@ -1,6 +1,7 @@
 ﻿using HiveContracts;
 using HiveLib.GameAssets;
 using FontStashSharp;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -11,17 +12,61 @@ public class ChatBoxGraphics : DrawableObject
     private const int _textBoxWidth = 500;
     private const int _textBuffer = 2;
 
+    private const int _headerHeight = 24;
+    private HexPoint _screenSize;
+
     public void ChangeScreenSize(HexPoint ScreenSize)
     {
+        _screenSize = ScreenSize;
         Location = new Rectangle((int)ScreenSize.X - _textBoxWidth, (int)ScreenSize.Y - _textBoxHeight, _textBoxWidth - 5, _textBoxHeight - 5);
     }
 
     private readonly Dictionary<string, ChatLayout> _layoutCache = new Dictionary<string, ChatLayout>();
 
-    public void Draw(string typingText, bool isTyping, IEnumerable<ChatMessage> messages)
+    public void Draw(string typingText, bool isTyping, IEnumerable<ChatMessage> messages, bool collapsed = false, bool hasUnread = false)
     {
+        var height = collapsed ? _headerHeight + 5 : _textBoxHeight;
+        Location = new Rectangle((int)_screenSize.X - _textBoxWidth, (int)_screenSize.Y - height, _textBoxWidth - 5, height - 5);
+
+        //DRAW GLOW (only while collapsed with an unread message)
+        if (collapsed && hasUnread)
+        {
+            var glowColor = new Color(140, 220, 170);
+            const int layers = 8;
+            for (var i = layers; i >= 1; i--)
+            {
+                var alpha = 0.35f * (layers - i + 1) / layers;
+                var glowRect = new Rectangle(Location.X - i, Location.Y - i, Location.Width + i * 2, Location.Height + i * 2);
+                Context.SpriteBatch.Draw(Art.Pixel, glowRect, glowColor * (alpha * 0.5f));
+            }
+        }
+
         //DRAW BOX
         Context.SpriteBatch.Draw(Art.Pixel, Location, new Color(26, 50, 38));
+
+        //DRAW OUTLINE
+        if (collapsed && hasUnread)
+        {
+            var outline = new Color(140, 220, 170);
+            Context.SpriteBatch.Draw(Art.Pixel, new Rectangle(Location.X, Location.Y, Location.Width, 2), outline);
+            Context.SpriteBatch.Draw(Art.Pixel, new Rectangle(Location.X, Location.Bottom - 2, Location.Width, 2), outline);
+            Context.SpriteBatch.Draw(Art.Pixel, new Rectangle(Location.X, Location.Y, 2, Location.Height), outline);
+            Context.SpriteBatch.Draw(Art.Pixel, new Rectangle(Location.Right - 2, Location.Y, 2, Location.Height), outline);
+        }
+
+        //DRAW COLLAPSE BUTTON
+        var caret = collapsed ? "^" : "v";
+        var buttonRect = new Rectangle(Location.Left, Location.Top, _headerHeight, _headerHeight);
+        Context.SpriteBatch.Draw(Art.Pixel, buttonRect, new Color(60, 100, 80));
+        var caretSize = Art.ChatFont.MeasureString(caret);
+        Context.SpriteBatch.DrawString(Art.ChatFont, caret,
+            new Vector2(buttonRect.Left + (_headerHeight - caretSize.X) / 2, buttonRect.Top + (_headerHeight - caretSize.Y) / 2), Color.MintCream);
+
+        if (collapsed)
+        {
+            Context.SpriteBatch.DrawString(Art.ChatFont, "Chat", new Vector2(buttonRect.Right + 6, buttonRect.Top + 2), Color.MintCream);
+            return;
+        }
 
         //DRAW LINE
         if (!string.IsNullOrWhiteSpace(typingText) || isTyping)
@@ -42,7 +87,7 @@ public class ChatBoxGraphics : DrawableObject
         //DRAW SERVER TEXT
         foreach (var text in messages)
         {
-            if (lineHeight - textHeight - 5 > Location.Top)
+            if (lineHeight - textHeight - 5 > Location.Top + _headerHeight)
             {
                 textHeight = DrawChatText(Art.ChatFont, text.PlayerName, text.PlayerTeam, text.Message, textHeight, lineHeight);
             }

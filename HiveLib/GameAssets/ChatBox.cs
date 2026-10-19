@@ -10,6 +10,11 @@ namespace HiveLib.GameAssets
     {
         public bool IsOpen { get; set; }
 
+        public bool IsCollapsed { get; set; }
+
+        // True when a message arrived that hasn't been seen yet; shown as a glow while collapsed.
+        public bool HasUnread { get; set; }
+
         public bool IsTyping { get; set; }
         public string TypingText { get; set; }
         public Stack<ChatMessage> ChatMessages { get; set; }
