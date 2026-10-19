@@ -126,6 +126,26 @@ namespace HiveOnline
                 _networkClient.MessageReceived -= _messageHandler;
         }
 
+        // Bottom middle, between the player's pile and the chat window.
+        private Microsoft.Xna.Framework.Rectangle QuitButton
+        {
+            get
+            {
+                var left = _view.GetPileBounds(_board.UserPile, false).Right;
+                var right = _view.ChatVisible ? _view.ChatBounds.Left : _view.ScreenSize.X;
+                var x = Math.Max(left + 10, (left + right) / 2 - 50);
+                return new Microsoft.Xna.Framework.Rectangle(x, _view.ScreenSize.Y - 55, 100, 40);
+            }
+        }
+
+        private Microsoft.Xna.Framework.Rectangle QuitPanel => new Microsoft.Xna.Framework.Rectangle(_view.ScreenSize.X / 2 - 320, _view.ScreenSize.Y / 2 - 90, 640, 190);
+
+        private bool _confirmingQuit;
+
+        private Microsoft.Xna.Framework.Rectangle QuitYesButton => new Microsoft.Xna.Framework.Rectangle(_view.ScreenSize.X / 2 - 160, _view.ScreenSize.Y / 2, 150, 50);
+
+        private Microsoft.Xna.Framework.Rectangle QuitNoButton => new Microsoft.Xna.Framework.Rectangle(_view.ScreenSize.X / 2 + 10, _view.ScreenSize.Y / 2, 150, 50);
+
         private bool GameOver => _playingState == PlayingState.Won || _playingState == PlayingState.Lost;
 
         // In multiplayer a rematch is impossible once the opponent has left.
@@ -138,7 +158,20 @@ namespace HiveOnline
 
         public override void Draw(HiveGraphics.GraphicsEngine _graphicsEngine)
         {
+            _graphicsEngine.BloomEnabled = !_confirmingQuit;
             _boardRenderer.Draw(_board, _view, _graphicsEngine.Context);
+
+            var quitMouse = Mouse.GetState();
+            _graphicsEngine.DrawButton(QuitButton, "Quit", QuitButton.Contains(quitMouse.X, quitMouse.Y));
+
+            if (_confirmingQuit)
+            {
+                _graphicsEngine.DrawPanel(QuitPanel);
+                _graphicsEngine.DrawStringTop(IsNetworkGame && !GameOver ? "Leave the game? Your opponent will be notified." : "Leave the game?",
+                    Microsoft.Xna.Framework.Color.White, _view.ScreenSize.Y / 2 - 60);
+                _graphicsEngine.DrawButton(QuitYesButton, "Yes, quit", QuitYesButton.Contains(quitMouse.X, quitMouse.Y));
+                _graphicsEngine.DrawButton(QuitNoButton, "Keep playing", QuitNoButton.Contains(quitMouse.X, quitMouse.Y));
+            }
 
             if (CanRematch)
             {
@@ -173,6 +206,27 @@ namespace HiveOnline
             _previousMouseState = mouseState;
 
             ProcessNetworkMessages();
+
+            if (_confirmingQuit)
+            {
+                if (leftClicked && QuitYesButton.Contains(mouseState.X, mouseState.Y))
+                {
+                    Detach();
+                    _gameState = GameState.OpeningScreen;
+                }
+                else if (leftClicked && QuitNoButton.Contains(mouseState.X, mouseState.Y))
+                {
+                    _confirmingQuit = false;
+                }
+
+                return;
+            }
+
+            if (leftClicked && QuitButton.Contains(mouseState.X, mouseState.Y))
+            {
+                _confirmingQuit = true;
+                return;
+            }
 
             if (_board.ChatWindow.IsTyping)
             {

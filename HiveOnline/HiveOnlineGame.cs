@@ -94,6 +94,26 @@ namespace HiveOnline
             _graphicsEngine.Load(GraphicsDevice, Content);
         }
 
+        // Tells the server we are leaving (so the opponent is notified), then drops the connection.
+        // A fresh client is created the next time multiplayer is chosen.
+        private void LeaveServerGracefully()
+        {
+            var client = _hiveClient;
+            _hiveClient = null;
+            _connectTask = null;
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await Task.WhenAny(client.SendMessage("BYE"), Task.Delay(1000));
+                }
+                catch (Exception)
+                {
+                }
+                client.Dispose();
+            });
+        }
+
         protected override void OnExiting(object sender, EventArgs args)
         {
             if (_hiveClient != null)
@@ -181,7 +201,13 @@ namespace HiveOnline
                     SetWindowSize();
                 }
                 if (_gameState == GameState.OpeningScreen && _previousState != GameState.OpeningScreen)
+                {
+                    if (_gameEngine is RunningGameEngine && _hiveClient != null)
+                        LeaveServerGracefully();
+                    Window.Title = "Hive";
                     _gameEngine = new OpeningScreenEngine();
+                    SetWindowSize();
+                }
                 if (_gameState == GameState.ConnectToServer && _previousState != GameState.ConnectToServer)
                 {
                     var serverKeyPin = Environment.GetEnvironmentVariable("HIVE_TLS_PIN") ?? DefaultServerKeyPin;
@@ -211,6 +237,7 @@ namespace HiveOnline
 
             _graphicsEngine.BeginSprites();
 
+            _graphicsEngine.BloomEnabled = true;
             _gameEngine.Draw(_graphicsEngine);
 
             //_graphicsEngine.DrawFps(framesPerSecond);

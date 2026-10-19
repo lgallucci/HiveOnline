@@ -9,6 +9,9 @@ namespace HiveGraphics
         public GraphicsDevice Device { get; private set; }
         public SpriteBatch SpriteBatch { get; private set; }
         public BloomRenderer BloomRenderer { get; private set; }
+
+        // The glow is composited over the whole scene, so it must be off while a dialog is shown.
+        public bool BloomEnabled { get; set; } = true;
         public RenderContext Context { get; }
         private RenderTarget2D _sceneRenderTarget;
 
@@ -76,7 +79,7 @@ namespace HiveGraphics
             SpriteBatch.Draw(_sceneRenderTarget, Vector2.Zero, Color.White);
             SpriteBatch.End();
 
-            if (bloomTexture != null)
+            if (bloomTexture != null && BloomEnabled)
             {
                 SpriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Additive);
                 SpriteBatch.Draw(bloomTexture, new Rectangle(0, 0, ScreenSize.X, ScreenSize.Y), Color.White);
@@ -102,6 +105,15 @@ namespace HiveGraphics
             var size = Art.NameFont.MeasureString(text);
             SpriteBatch.DrawString(Art.NameFont, text,
                 new Vector2(bounds.X + (bounds.Width - size.X) / 2, bounds.Y + (bounds.Height - size.Y) / 2), Color.White);
+        }
+
+        public void DrawPanel(Rectangle bounds)
+        {
+            SpriteBatch.Draw(Art.Pixel, bounds, new Color(18, 36, 27));
+            SpriteBatch.Draw(Art.Pixel, new Rectangle(bounds.X, bounds.Y, bounds.Width, 3), Color.MintCream);
+            SpriteBatch.Draw(Art.Pixel, new Rectangle(bounds.X, bounds.Bottom - 3, bounds.Width, 3), Color.MintCream);
+            SpriteBatch.Draw(Art.Pixel, new Rectangle(bounds.X, bounds.Y, 3, bounds.Height), Color.MintCream);
+            SpriteBatch.Draw(Art.Pixel, new Rectangle(bounds.Right - 3, bounds.Y, 3, bounds.Height), Color.MintCream);
         }
 
         public void DrawStringTop(string text, Color color, int y)
