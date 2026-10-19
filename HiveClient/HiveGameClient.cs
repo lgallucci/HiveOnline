@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -20,6 +22,11 @@ namespace HiveClient
 
         public bool IsConnected => _tcpClient?.IsConnected ?? false;
 
+        // Encrypt the connection with TLS. If ServerKeyPin (SHA-256 hex of the server's public key, see
+        // HiveServer --generate-cert) is set the key is pinned, otherwise the certificate must be trusted by the system.
+        public bool UseTls { get; init; }
+        public string ServerKeyPin { get; init; }
+
         public HiveGameClient(string address, int port)
         {
             _address = address;
@@ -39,6 +46,17 @@ namespace HiveClient
                 ReceivedCallback = ClientReceived
             };
 
+            if (UseTls)
+            {
+                _tcpClient.StreamSetup = async stream =>
+                {
+                    var ssl = new SslStream(stream, false, ValidateServerCertificate);
+                    using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                    await ssl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions { TargetHost = _address }, timeout.Token);
+                    return ssl;
+                };
+            }
+
             using var cancellationRegistration = cancellationToken.Register(() =>
             {
                 _tcpClient.AutoReconnect = false;
@@ -46,6 +64,19 @@ namespace HiveClient
             });
 
             await _tcpClient.RunAsync();
+        }
+
+        private bool ValidateServerCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors errors)
+        {
+            if (string.IsNullOrWhiteSpace(ServerKeyPin))
+                return errors == SslPolicyErrors.None;
+
+            if (certificate == null)
+                return false;
+
+            var expected = ServerKeyPin.Replace(":", "").Replace(" ", "");
+            var actual = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(new X509Certificate2(certificate).PublicKey.ExportSubjectPublicKeyInfo()));
+            return string.Equals(expected, actual, StringComparison.OrdinalIgnoreCase);
         }
 
         private Task ClientReceived(AsyncTcpClient client, int length)

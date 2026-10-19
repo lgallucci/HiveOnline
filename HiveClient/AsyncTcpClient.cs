@@ -28,7 +28,7 @@ namespace Unclassified.Net
 		#region Private data
 
 		private TcpClient tcpClient;
-		private NetworkStream stream;
+		private Stream stream;
 		private readonly SemaphoreSlim sendLock = new SemaphoreSlim(1, 1);
 		private TaskCompletionSource<bool> closedTcs = new TaskCompletionSource<bool>();
 
@@ -63,6 +63,12 @@ namespace Unclassified.Net
 		/// accepted by an <see cref="AsyncTcpListener"/>.
 		/// </summary>
 		public TcpClient ServerTcpClient { get; set; }
+
+		/// <summary>
+		/// Optional hook that wraps the raw network stream (e.g. in an SslStream) once connected.
+		/// If it throws, the connection is dropped.
+		/// </summary>
+		public Func<Stream, Task<Stream>> StreamSetup { get; set; }
 
 		/// <summary>
 		/// Gets or sets the amount of time an <see cref="AsyncTcpClient"/> will wait to connect
@@ -203,7 +209,29 @@ namespace Unclassified.Net
 					}
 				}
 				reconnectTry = -1;
-				stream = tcpClient.GetStream();
+				Stream networkStream = tcpClient.GetStream();
+				if (StreamSetup != null)
+				{
+					try
+					{
+						networkStream = await StreamSetup(networkStream);
+					}
+					catch (Exception ex)
+					{
+						Message?.Invoke(this, new AsyncTcpEventArgs("Secure connection setup failed", ex));
+						tcpClient.Close();
+						if (ServerTcpClient != null)
+						{
+							closedTcs = new TaskCompletionSource<bool>();
+							closedTcs.TrySetResult(true);
+							OnClosed(true);
+							return;
+						}
+						await Task.Delay(ConnectTimeout);
+						continue;
+					}
+				}
+				stream = networkStream;
 
 				// Read until the connection is closed.
 				// A closed connection can only be detected while reading, so we need to read

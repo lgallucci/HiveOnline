@@ -5,7 +5,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <ContainerBaseImage>mcr.microsoft.com/dotnet/runtime:10.0</ContainerBaseImage>
     <ContainerImageName>HiveServer</ContainerImageName>

@@ -23,7 +23,7 @@ namespace HiveServer
 
         public string RemoteEndpoint => tcpClient?.ServerTcpClient?.Client?.RemoteEndPoint?.ToString() ?? "unknown";
 
-        public ConnectedHiveClient(TcpClient tcpClient)
+        public ConnectedHiveClient(TcpClient tcpClient, System.Security.Cryptography.X509Certificates.X509Certificate2? certificate = null)
         {
             Identifier = Guid.NewGuid();
             this.tcpClient = new AsyncTcpClient
@@ -33,6 +33,17 @@ namespace HiveServer
                 ReceivedCallback = MessageReceivedAsync,
                 ClosedCallback = ClientClosed
             };
+
+            if (certificate != null)
+            {
+                this.tcpClient.StreamSetup = async stream =>
+                {
+                    var ssl = new System.Net.Security.SslStream(stream, false);
+                    using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                    await ssl.AuthenticateAsServerAsync(new System.Net.Security.SslServerAuthenticationOptions { ServerCertificate = certificate }, timeout.Token);
+                    return ssl;
+                };
+            }
         }
 
         private async Task ClientConnected(AsyncTcpClient client, bool isReconnected)

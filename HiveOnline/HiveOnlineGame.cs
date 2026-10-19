@@ -19,6 +19,10 @@ namespace HiveOnline
 
     class HiveOnlineGame : Game
     {
+        // SHA-256 of the server's public key, printed by "HiveServer --generate-cert". Leave empty for an
+        // unencrypted server (local testing); HIVE_TLS_PIN overrides it.
+        private const string DefaultServerKeyPin = ""; //"196FEC9D9FD84FC6B90D514167E9B997CF4EEC4B123CD30055B4CF6E745729DB";
+
         private GameMode _gameMode;
         private HiveGameClient _hiveClient;
         private readonly string _address;
@@ -180,7 +184,12 @@ namespace HiveOnline
                     _gameEngine = new OpeningScreenEngine();
                 if (_gameState == GameState.ConnectToServer && _previousState != GameState.ConnectToServer)
                 {
-                    _hiveClient ??= new HiveGameClient(_address, _port);
+                    var serverKeyPin = Environment.GetEnvironmentVariable("HIVE_TLS_PIN") ?? DefaultServerKeyPin;
+                    _hiveClient ??= new HiveGameClient(_address, _port)
+                    {
+                        UseTls = serverKeyPin.Length > 0 || Environment.GetEnvironmentVariable("HIVE_TLS") == "1",
+                        ServerKeyPin = serverKeyPin
+                    };
                     _connectTask ??= Task.Run(() => _hiveClient.ConnectAsync());
                     _gameEngine = new ConnectToServerEngine(_hiveClient);
                 }

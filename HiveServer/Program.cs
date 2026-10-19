@@ -10,6 +10,13 @@ namespace HiveServer
     {
         static async Task Main(string[] args)
         {
+            var generateIndex = Array.FindIndex(args, a => a.Equals("--generate-cert", StringComparison.OrdinalIgnoreCase));
+            if (generateIndex >= 0)
+            {
+                TlsCertificate.Generate(args.Length > generateIndex + 1 ? args[generateIndex + 1] : "hive-server.pfx");
+                return;
+            }
+
             var port = 7777;
             var portText = Environment.GetEnvironmentVariable("HIVE_PORT");
             if (!string.IsNullOrWhiteSpace(portText) && int.TryParse(portText, out var configuredPort))
@@ -25,7 +32,7 @@ namespace HiveServer
             IHost host = Host.CreateDefaultBuilder(args)
                 .ConfigureServices(services =>
                 {
-                    services.AddSingleton(new GameServer(port) { TestMode = testMode });
+                    services.AddSingleton(new GameServer(port) { TestMode = testMode, Certificate = TlsCertificate.LoadFromEnvironment() });
                     services.AddHostedService(sp => sp.GetRequiredService<GameServer>());
                 })
                 .Build();

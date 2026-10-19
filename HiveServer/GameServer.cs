@@ -24,6 +24,9 @@ namespace HiveServer
         // Verbose logging of connections, matches, moves and disconnects for manual testing.
         public bool TestMode { get; set; }
 
+        // When set, all client connections are encrypted with TLS using this certificate.
+        public System.Security.Cryptography.X509Certificates.X509Certificate2? Certificate { get; set; }
+
         private void Trace(string message)
         {
             if (TestMode)
@@ -50,7 +53,7 @@ namespace HiveServer
 
         private async Task ClientConnected(TcpClient tcpClient)
         {
-            var client = new ConnectedHiveClient(tcpClient)
+            var client = new ConnectedHiveClient(tcpClient, Certificate)
             {
                 MessageReceived = HandleClientMessage
             };
