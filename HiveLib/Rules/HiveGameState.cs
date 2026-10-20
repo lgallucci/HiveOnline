@@ -99,11 +99,11 @@ public sealed class HiveGameState
 
         _turnCounts[GetTeamIndex(move.Team)]++;
         _consecutivePasses = 0;
-        IsFinished = IsQueenSurrounded(BugTeam.Light) || IsQueenSurrounded(BugTeam.Dark);
+        var lightSurrounded = IsQueenSurrounded(BugTeam.Light);
+        var darkSurrounded = IsQueenSurrounded(BugTeam.Dark);
+        IsFinished = lightSurrounded || darkSurrounded;
         if (IsFinished)
-            WinningTeam = IsQueenSurrounded(CurrentTeam == BugTeam.Light ? BugTeam.Dark : BugTeam.Light)
-                ? CurrentTeam
-                : Opponent(CurrentTeam);
+            WinningTeam = lightSurrounded && darkSurrounded ? null : lightSurrounded ? BugTeam.Dark : BugTeam.Light;
         else
             CurrentTeam = Opponent(CurrentTeam);
 

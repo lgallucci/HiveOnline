@@ -10,13 +10,15 @@ namespace HiveOnline
     public class SimpleAI
     {
         private PlayingBoard _board;
+        private BugTeam _team;
         private Random _random = new Random();
         private double _thinkTime = 0;
         private const double THINK_DURATION = 1.5; // Seconds to think before making a move
 
-        public SimpleAI(PlayingBoard board)
+        public SimpleAI(PlayingBoard board, BugTeam team = BugTeam.Dark)
         {
             _board = board;
+            _team = team;
         }
 
         public bool MakeMove(double elapsedSeconds, int turnCount, bool queenPlaced)
@@ -34,7 +36,7 @@ namespace HiveOnline
                 if (_board.OpponentPile.QueenBees?.Count > 0)
                 {
                     // Get valid placements using existing Pile logic
-                    var availablePlacements = _board.OpponentPile.CalculateAvailable(_board, BugTeam.Dark);
+                    var availablePlacements = _board.OpponentPile.CalculateAvailable(_board, _team);
                     if (availablePlacements.Count > 0)
                     {
                         var queen = _board.OpponentPile.GetTile(BugType.QueenBee);
@@ -47,7 +49,7 @@ namespace HiveOnline
                 return false;
             }
 
-            var validPlacements = _board.OpponentPile.CalculateAvailable(_board, BugTeam.Dark);
+            var validPlacements = _board.OpponentPile.CalculateAvailable(_board, _team);
             var availableBugTypes = GetAvailableBugTypes(_board.OpponentPile);
 
             // Sometimes prefer a fresh pile placement, not just moving already-placed pieces.
@@ -58,7 +60,7 @@ namespace HiveOnline
             {
                 var bugType = SelectBestBugType(availableBugTypes, queenPlaced);
                 var newTile = _board.OpponentPile.GetTile(bugType);
-                var placement = SelectBestPlacement(validPlacements, BugTeam.Dark);
+                var placement = SelectBestPlacement(validPlacements, _team);
 
                 newTile.Location = placement;
                 _board.AddTile(newTile);
@@ -68,7 +70,7 @@ namespace HiveOnline
             // Try to move an existing piece on the board (only if Queen is placed)
             if (queenPlaced && _board.Tiles.Count > 0)
             {
-                var opponentPieces = _board.Tiles.Where(t => t.Value.Team == BugTeam.Dark).ToList();
+                var opponentPieces = _board.Tiles.Where(t => t.Value.Team == _team).ToList();
 
                 // Shuffle to randomize which piece we try to move
                 for (int i = opponentPieces.Count - 1; i > 0; i--)
@@ -87,7 +89,7 @@ namespace HiveOnline
                         if (available.Count > 0)
                         {
                             var moveLocation = available
-                                .OrderByDescending(destination => ScoreMoveDestination(piece.Value, destination, BugTeam.Dark))
+                                .OrderByDescending(destination => ScoreMoveDestination(piece.Value, destination, _team))
                                 .First();
                             ExecuteMove(piece.Value, moveLocation);
                             return true;
@@ -101,7 +103,7 @@ namespace HiveOnline
             {
                 var bugType = SelectBestBugType(availableBugTypes, queenPlaced);
                 var newTile = _board.OpponentPile.GetTile(bugType);
-                var placement = SelectBestPlacement(validPlacements, BugTeam.Dark);
+                var placement = SelectBestPlacement(validPlacements, _team);
 
                 newTile.Location = placement;
                 _board.AddTile(newTile);

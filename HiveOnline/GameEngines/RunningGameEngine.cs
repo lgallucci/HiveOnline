@@ -77,7 +77,7 @@ namespace HiveOnline
             _view.ChatVisible = _networkClient != null;
             _boardRenderer = new BoardRenderer();
             _boardRenderer.Resize(_view, _board);
-            _ai = new SimpleAI(_board);
+            _ai = new SimpleAI(_board, _opponentTeam);
 
             if (_networkClient == null && !string.IsNullOrWhiteSpace(playerName))
             {
@@ -612,7 +612,7 @@ namespace HiveOnline
 
             if (_ai.MakeMove(gameTime.ElapsedGameTime.TotalSeconds, _opponentTurnCount, _opponentQueenPlaced))
             {
-                if (!_opponentQueenPlaced && _board.Tiles.Values.Any(t => t.Team == BugTeam.Dark && t.Type == BugType.QueenBee))
+                if (!_opponentQueenPlaced && _board.Tiles.Values.Any(t => t.Team == _opponentTeam && t.Type == BugType.QueenBee))
                     _opponentQueenPlaced = true;
 
                 _board.SelectedTile = null;
@@ -781,7 +781,9 @@ namespace HiveOnline
             if (_rules.WinningTeam == null)
             {
                 _playingState = PlayingState.Draw;
-                _board.CurrentTurn = "Draw! Neither player can move.";
+                _board.CurrentTurn = _rules.Board.Tiles.Values.Any(t => t.Type == BugType.QueenBee) && BothQueensSurrounded()
+                    ? "Draw! Both Queens are surrounded!"
+                    : "Draw! Neither player can move.";
             }
             else if (_rules.WinningTeam == _playerTeam)
             {
@@ -859,18 +861,24 @@ namespace HiveOnline
 
         private bool CheckWinCondition()
         {
-            // Check if opponent's Queen is surrounded
-            var opponentQueens = _board.Tiles.Values.Where(t => t.Team == BugTeam.Dark && t.Type == BugType.QueenBee).ToList();
-            if (opponentQueens.Count > 0 && IsQueenSurrounded(opponentQueens[0]))
+            var opponentSurrounded = _board.Tiles.Values.Any(t => t.Team == _opponentTeam && t.Type == BugType.QueenBee && IsQueenSurrounded(t));
+            var playerSurrounded = _board.Tiles.Values.Any(t => t.Team == _playerTeam && t.Type == BugType.QueenBee && IsQueenSurrounded(t));
+
+            if (opponentSurrounded && playerSurrounded)
+            {
+                _playingState = PlayingState.Draw;
+                _board.CurrentTurn = "Draw! Both Queens are surrounded!";
+                return true;
+            }
+
+            if (opponentSurrounded)
             {
                 _playingState = PlayingState.Won;
                 _board.CurrentTurn = "You won! Opponent's Queen is surrounded!";
                 return true;
             }
 
-            // Check if player's Queen is surrounded
-            var playerQueens = _board.Tiles.Values.Where(t => t.Team == BugTeam.Light && t.Type == BugType.QueenBee).ToList();
-            if (playerQueens.Count > 0 && IsQueenSurrounded(playerQueens[0]))
+            if (playerSurrounded)
             {
                 _playingState = PlayingState.Lost;
                 _board.CurrentTurn = "You lost! Your Queen is surrounded!";
@@ -878,6 +886,12 @@ namespace HiveOnline
             }
 
             return false;
+        }
+
+        private bool BothQueensSurrounded()
+        {
+            var queens = _board.Tiles.Values.Where(t => t.Type == BugType.QueenBee).ToList();
+            return queens.Count == 2 && queens.All(IsQueenSurrounded);
         }
 
         private bool IsQueenSurrounded(ITile queen)
@@ -896,9 +910,17 @@ namespace HiveOnline
         {
             if (_rules.IsFinished)
             {
-                _playingState = PlayingState.Won;
-                var winner = _rules.WinningTeam == _playerTeam ? _board.UserName : _board.OpponentName;
-                _board.CurrentTurn = $"{winner} wins! The Queen is surrounded!";
+                if (_rules.WinningTeam == null)
+                {
+                    _playingState = PlayingState.Draw;
+                    _board.CurrentTurn = "Draw! Both Queens are surrounded!";
+                }
+                else
+                {
+                    _playingState = PlayingState.Won;
+                    var winner = _rules.WinningTeam == _playerTeam ? _board.UserName : _board.OpponentName;
+                    _board.CurrentTurn = $"{winner} wins! The Queen is surrounded!";
+                }
                 DeselectAll();
                 return;
             }
