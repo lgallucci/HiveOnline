@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.lgallucci.HiveOnline</id>
+  <name>Hive Online</name>
+  <summary>Play the Hive board game against the computer or online</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>LicenseRef-proprietary</project_license>
+  <description>
+    <p>A digital version of the Hive board game. Play against the computer, share one screen with a friend, or join an online lobby.</p>
+  </description>
+  <launchable type="desktop-id">io.github.lgallucci.HiveOnline.desktop</launchable>
+  <content_rating type="oars-1.1" />
+  <releases>
+    <release version="1.0.0" date="2026-10-20" />
+  </releases>
+</component>

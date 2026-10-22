@@ -5,6 +5,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ApplicationIcon>Icon.ico</ApplicationIcon>
     <SelfContained>true</SelfContained>
+    <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 
   <ItemGroup>

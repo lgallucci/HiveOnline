@@ -1,0 +1,34 @@
+app-id: io.github.lgallucci.HiveOnline
+runtime: org.freedesktop.Platform
+runtime-version: '24.08'
+sdk: org.freedesktop.Sdk
+command: hiveonline
+finish-args:
+  - --share=network
+  - --socket=x11
+  - --socket=wayland
+  - --socket=pulseaudio
+  - --device=dri
+modules:
+  - name: hiveonline
+    buildsystem: simple
+    build-commands:
+      - mkdir -p /app/lib/hiveonline
+      - cp -r publish/. /app/lib/hiveonline/
+      - chmod +x /app/lib/hiveonline/HiveOnline
+      - install -Dm755 hiveonline.sh /app/bin/hiveonline
+      - install -Dm644 io.github.lgallucci.HiveOnline.desktop /app/share/applications/io.github.lgallucci.HiveOnline.desktop
+      - install -Dm644 io.github.lgallucci.HiveOnline.metainfo.xml /app/share/metainfo/io.github.lgallucci.HiveOnline.metainfo.xml
+      - install -Dm644 io.github.lgallucci.HiveOnline.png /app/share/icons/hicolor/256x256/apps/io.github.lgallucci.HiveOnline.png
+    sources:
+      - type: dir
+        path: ../artifacts/linux-x64
+        dest: publish
+      - type: file
+        path: hiveonline.sh
+      - type: file
+        path: io.github.lgallucci.HiveOnline.desktop
+      - type: file
+        path: io.github.lgallucci.HiveOnline.metainfo.xml
+      - type: file
+        path: io.github.lgallucci.HiveOnline.png

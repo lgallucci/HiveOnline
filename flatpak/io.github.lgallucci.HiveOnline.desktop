@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Hive Online
+Comment=Play the Hive board game against the computer or online
+Exec=hiveonline
+Icon=io.github.lgallucci.HiveOnline
+Categories=Game;BoardGame;
+Terminal=false
