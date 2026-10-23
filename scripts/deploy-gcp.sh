@@ -33,15 +33,37 @@ gcloud compute addresses describe "$VM-ip" --region "$REGION" >/dev/null 2>&1 ||
   gcloud compute addresses create "$VM-ip" --region "$REGION"
 IP=$(gcloud compute addresses describe "$VM-ip" --region "$REGION" --format='value(address)')
 
+# Container-Optimized OS already ships Docker; the startup script (re-run on every boot) pulls
+# the latest image and runs it. Settings are passed as instance metadata.
+STARTUP=$(mktemp)
+trap 'rm -f "$STARTUP"' EXIT
+cat > "$STARTUP" <<'SCRIPT'
+#!/bin/bash
+md() { curl -s -H 'Metadata-Flavor: Google' "http://metadata.google.internal/computeMetadata/v1/instance/attributes/$1"; }
+export HOME=/home/chronos
+IMAGE=$(md hive-image)
+docker-credential-gcr configure-docker --registries="${IMAGE%%/*}"
+docker pull "$IMAGE"
+docker rm -f hive-server 2>/dev/null
+PORT=$(md hive-port)
+docker run -d --name hive-server --restart always -p "$PORT:$PORT" \
+  -e HIVE_PORT="$PORT" -e HIVE_TLS=1 -e HIVE_CERT_BASE64="$(md hive-cert-b64)" "$IMAGE"
+SCRIPT
+CERT_META=$(mktemp)
+trap 'rm -f "$STARTUP" "$CERT_META"' EXIT
+printf '%s' "$CERT_B64" > "$CERT_META"
+METADATA="hive-image=$IMAGE,hive-port=$PORT"
+
 if gcloud compute instances describe "$VM" --zone "$ZONE" >/dev/null 2>&1; then
-  gcloud compute instances update-container "$VM" --zone "$ZONE" --container-image "$IMAGE" \
-    --container-env "HIVE_PORT=$PORT,HIVE_TLS=1,HIVE_CERT_BASE64=$CERT_B64"
+  gcloud compute instances add-metadata "$VM" --zone "$ZONE" \
+    --metadata "$METADATA" --metadata-from-file "startup-script=$STARTUP,hive-cert-b64=$CERT_META"
+  # Rebooting re-runs the startup script, which pulls the new image.
+  gcloud compute instances reset "$VM" --zone "$ZONE"
 else
-  gcloud compute instances create-with-container "$VM" --zone "$ZONE" \
+  gcloud compute instances create "$VM" --zone "$ZONE" \
     --machine-type e2-micro --boot-disk-size 30GB --boot-disk-type pd-standard --address "$IP" --tags hive-server \
-    --container-image "$IMAGE" \
-    --container-env "HIVE_PORT=$PORT,HIVE_TLS=1,HIVE_CERT_BASE64=$CERT_B64" \
-    --container-restart-policy always \
+    --image-family cos-stable --image-project cos-cloud \
+    --metadata "$METADATA" --metadata-from-file "startup-script=$STARTUP,hive-cert-b64=$CERT_META" \
     --scopes cloud-platform
 fi
 

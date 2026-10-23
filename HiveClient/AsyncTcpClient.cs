@@ -29,10 +29,12 @@ namespace Unclassified.Net
 
 		private TcpClient tcpClient;
 		private Stream stream;
+		// True only once the (TLS) stream is usable; the TCP socket is connected earlier than that.
+		private volatile bool streamReady;
 		private readonly SemaphoreSlim sendLock = new SemaphoreSlim(1, 1);
 		private TaskCompletionSource<bool> closedTcs = new TaskCompletionSource<bool>();
 
-		public bool IsConnected { get { return tcpClient?.Connected == true; } }
+		public bool IsConnected { get { return streamReady && tcpClient?.Connected == true; } }
 		#endregion Private data
 
 		#region Constructors
@@ -209,6 +211,7 @@ namespace Unclassified.Net
 					}
 				}
 				reconnectTry = -1;
+				streamReady = false;
 				Stream networkStream = tcpClient.GetStream();
 				if (StreamSetup != null)
 				{
@@ -232,6 +235,7 @@ namespace Unclassified.Net
 					}
 				}
 				stream = networkStream;
+				streamReady = true;
 
 				// Read until the connection is closed.
 				// A closed connection can only be detected while reading, so we need to read
@@ -285,6 +289,7 @@ namespace Unclassified.Net
 
 				// Wait for closed connection
 				await networkReadTask;
+				streamReady = false;
 				tcpClient.Close();
 
 				isReconnected = true;
@@ -319,6 +324,7 @@ namespace Unclassified.Net
 		public void Dispose()
 		{
 			AutoReconnect = false;
+			streamReady = false;
 			tcpClient?.Dispose();
 			stream = null;
 		}
