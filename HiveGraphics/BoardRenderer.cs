@@ -40,7 +40,12 @@ public sealed class BoardRenderer
         {
             _renderTiles.Clear();
             _renderTiles.AddRange(board.Tiles.Values);
-            _renderTiles.Sort((left, right) => left.Type.CompareTo(right.Type));
+            // Taller stacks are drawn last so they sit on top of their neighbours.
+            _renderTiles.Sort((left, right) =>
+            {
+                var byHeight = StackHeight(left).CompareTo(StackHeight(right));
+                return byHeight != 0 ? byHeight : left.Type.CompareTo(right.Type);
+            });
             _renderTilesDirty = false;
             _renderedBoardVersion = board.Version;
         }
@@ -67,6 +72,14 @@ public sealed class BoardRenderer
             else
                 DrawPileSelection(board.UserPile, board.SelectedTile.Type, view);
         }
+    }
+
+    private static int StackHeight(ITile tile)
+    {
+        var height = 1;
+        for (var covered = (tile as Beetle)?.CoveredPiece; covered != null; covered = (covered as Beetle)?.CoveredPiece)
+            height++;
+        return height;
     }
 
     public void MarkTilesDirty() => _renderTilesDirty = true;
