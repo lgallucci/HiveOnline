@@ -25,16 +25,13 @@ public sealed class BoardRenderer
         _boardGraphics.Width = view.ScreenSize.X;
         _boardGraphics.Height = view.ScreenSize.Y;
         _chatGraphics.ChangeScreenSize(new HexPoint(view.ScreenSize.X, view.ScreenSize.Y));
-        var userBounds = view.GetPileBounds(board.UserPile, false);
-        var opponentBounds = view.GetPileBounds(board.OpponentPile, true);
-        _userPileGraphics.SetBounds(userBounds);
-        _opponentPileGraphics.SetBounds(opponentBounds);
     }
 
     public void Draw(PlayingBoard board, BoardViewState view, RenderContext context)
     {
         BindContext(context);
         _boardGraphics.Draw(board.UserName, board.OpponentName, board.CurrentTurn);
+        SetPileBounds(view, board);
 
         if (_renderTilesDirty || _renderedBoardVersion != board.Version)
         {
@@ -54,10 +51,10 @@ public sealed class BoardRenderer
             DrawTile(tile, view);
 
         foreach (var testSpot in board.TestSpots.Values)
-            _boardGraphics.DrawHexagon(view.Layout, testSpot, 255, 247, 0);
+            _boardGraphics.DrawHexagon(view.Layout, testSpot, new Color(190, 80, 255));
 
         foreach (var available in board.AvailableTiles.Values)
-            _boardGraphics.DrawHexagon(view.Layout, available, 170, 189, 100);
+            _boardGraphics.DrawHexagon(view.Layout, available, new Color(170, 189, 100));
 
         DrawPile(board.UserPile, view, false);
         DrawPile(board.OpponentPile, view, true);
@@ -68,10 +65,18 @@ public sealed class BoardRenderer
         if (board.SelectedTile != null)
         {
             if (board.ContainsTile(board.SelectedTile))
-                _boardGraphics.DrawHexagon(view.Layout, board.SelectedTile.Location, 4, 217, 255);
+                _boardGraphics.DrawHexagon(view.Layout, board.SelectedTile.Location, new Color(4, 217, 255));
             else
                 DrawPileSelection(board.UserPile, board.SelectedTile.Type, view);
         }
+    }
+
+    private void SetPileBounds(BoardViewState view, PlayingBoard board)
+    {
+        var userBounds = view.GetPileBounds(board.UserPile, false);
+        var opponentBounds = view.GetPileBounds(board.OpponentPile, true);
+        _userPileGraphics.SetBounds(userBounds);
+        _opponentPileGraphics.SetBounds(opponentBounds);
     }
 
     private static int StackHeight(ITile tile)
@@ -161,7 +166,7 @@ public sealed class BoardRenderer
             var angle = 2.0 * Math.PI * -i / 6.0;
             corners.Add(new HexPoint(center.X + 37.5 * Math.Cos(angle), center.Y + 37.5 * Math.Sin(angle)));
         }
-        _boardGraphics.DrawHexagon(corners, 4, 217, 255);
+        _boardGraphics.DrawHexagon(corners, new Color(4, 217, 255));
     }
 
 }

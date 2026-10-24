@@ -26,12 +26,12 @@ public class BoardGraphics : DrawableObject
         }
     }
 
-    public void DrawHexagon(Layout layout, Hex location, int colorR, int colorG, int colorB)
+    public void DrawHexagon(Layout layout, Hex location, Color color)
     {
-        DrawHexagon(layout.PolygonCorners(location), colorR, colorG, colorB);
+        DrawHexagon(layout.PolygonCorners(location), color);
     }
 
-    public void DrawHexagon(List<HexPoint> corners, int colorR, int colorG, int colorB)
+    public void DrawHexagon(List<HexPoint> corners, Color color)
     { 
         HexPoint firstPoint = new HexPoint(0, 0);
         Nullable<HexPoint> previousPoint = null;
@@ -39,7 +39,6 @@ public class BoardGraphics : DrawableObject
         {
             if (previousPoint.HasValue)
             {
-                var color = new Color(colorR, colorG, colorB);
                 Context.SpriteBatch.DrawLine(Art.Pixel, corner.ToVector2(), previousPoint.Value.ToVector2(), color, 4f);
                 Context.Bloom.DrawLine(Art.Pixel, corner.ToVector2(), previousPoint.Value.ToVector2(), color, 4f);
             }
@@ -51,9 +50,8 @@ public class BoardGraphics : DrawableObject
             previousPoint = corner;
         }
 
-        var outlineColor = new Color(colorR, colorG, colorB);
-        Context.SpriteBatch.DrawLine(Art.Pixel, firstPoint.ToVector2(), previousPoint.Value.ToVector2(), outlineColor, 4f);
-        Context.Bloom.DrawLine(Art.Pixel, firstPoint.ToVector2(), previousPoint.Value.ToVector2(), outlineColor, 4f);
+        Context.SpriteBatch.DrawLine(Art.Pixel, firstPoint.ToVector2(), previousPoint.Value.ToVector2(), color, 4f);
+        Context.Bloom.DrawLine(Art.Pixel, firstPoint.ToVector2(), previousPoint.Value.ToVector2(), color, 4f);
     }
 
     // Thin translucent outline without glow, used for subtle emphasis.
@@ -66,12 +64,12 @@ public class BoardGraphics : DrawableObject
         }
     }
 
-    public void DrawText(Layout layout, Hex location, string text, int colorR, int colorG, int colorB)
+    public void DrawText(Layout layout, Hex location, string text, Color color)
     {
         var vector2 = layout.HexToPixel(location);
 
         Context.SpriteBatch.DrawString(Art.ChatFont, text,
-            new Vector2((float)vector2.X - 30, (float)vector2.Y - 7), new Color(colorR, colorG, colorB));
+            new Vector2((float)vector2.X - 30, (float)vector2.Y - 7), color);
 
     }
 }

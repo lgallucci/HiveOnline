@@ -21,6 +21,7 @@ namespace HiveLib.Bugs
         {
             var hive = GetBoardWithoutMe(board);
             var results = new Dictionary<int, Hex>();
+            board.ClearTestSpots();
 
             for (var first = 0; first < 6; first++)
             {
@@ -42,6 +43,8 @@ namespace HiveLib.Bugs
                             IsGateBlocked(hive, secondHex, third, Height(hive, secondHex), 0))
                             continue;
                         results[landing.GetHashCode()] = landing;
+                        board.AddTestSpot(firstHex.GetHashCode(), firstHex);
+                        board.AddTestSpot(secondHex.GetHashCode(), secondHex);
                     }
                 }
             }

@@ -26,12 +26,12 @@ namespace HiveOnline.GameAssets
         public Pile(BugTeam team,
                     int beetleCount = 2,
                     int grasshopperCount = 3,
-                    int ladyBugCount = 0,
-                    int mosquitoCount = 0,
-                    int pillBugCount = 0,
                     int queenBeeCount = 1,
                     int soldierAntCount = 3,
-                    int spiderCount = 2)
+                    int spiderCount = 2,
+                    int ladyBugCount = 0,
+                    int mosquitoCount = 0,
+                    int pillBugCount = 0)
         {
             _team = team;
             while (beetleCount > 0 || grasshopperCount > 0 || ladyBugCount > 0 || mosquitoCount > 0 || pillBugCount > 0 || queenBeeCount > 0 || soldierAntCount > 0 || spiderCount > 0)
