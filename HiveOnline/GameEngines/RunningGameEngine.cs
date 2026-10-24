@@ -130,17 +130,9 @@ namespace HiveOnline
                 _networkClient.MessageReceived -= _messageHandler;
         }
 
-        // Bottom middle, between the player's pile and the chat window.
-        private Microsoft.Xna.Framework.Rectangle QuitButton
-        {
-            get
-            {
-                var left = _view.GetPileBounds(_board.UserPile, false).Right;
-                var right = _view.ChatVisible ? _view.ChatBounds.Left : _view.ScreenSize.X;
-                var x = Math.Max(left + 10, (left + right) / 2 - 50);
-                return new Microsoft.Xna.Framework.Rectangle(x, _view.ScreenSize.Y - 55, 100, 40);
-            }
-        }
+        // Directly above the player's name, which sits just above their pile (bottom left).
+        private Microsoft.Xna.Framework.Rectangle QuitButton =>
+            new Microsoft.Xna.Framework.Rectangle(5, _view.ScreenSize.Y - 75 - 40 - 6 - 40, 100, 40);
 
         private Microsoft.Xna.Framework.Rectangle QuitPanel => new Microsoft.Xna.Framework.Rectangle(_view.ScreenSize.X / 2 - 320, _view.ScreenSize.Y / 2 - 90, 640, 190);
 

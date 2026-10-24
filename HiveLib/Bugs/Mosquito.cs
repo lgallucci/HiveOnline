@@ -12,14 +12,9 @@ namespace HiveLib.Bugs
             Team = bugTeam;
         }
 
-        public override bool CanMoveTo(PlayingBoard board, Hex position)
-        {
-            throw new PlayException("Mosquito expansion hasn't been implemented!");
-        }
-
         public override List<Hex> CalculateAvailable(PlayingBoard board)
         {
-            throw new System.NotImplementedException();
+            throw new PlayException("Mosquito expansion hasn't been implemented!");
         }
     }
 }

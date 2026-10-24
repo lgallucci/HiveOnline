@@ -1,5 +1,6 @@
 using HiveContracts;
 using HiveLib.Rules;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace HiveLibTests;
@@ -159,5 +160,112 @@ public class HiveGameStateTests
         board.AddTile(darkBeetle);
 
         Assert.AreEqual(0, board.UserPile.CalculateAvailable(board, BugTeam.Light).Count);
+    }
+
+    [TestMethod]
+    public void BeetleCannotClimbMoreThanOneLevel()
+    {
+        var board = StateWithPiles(1, 1).Board;
+        var queen = new HiveLib.Bugs.QueenBee(BugTeam.Dark) { Location = new Hex(1, -1, 0) };
+        var mover = new HiveLib.Bugs.Beetle(BugTeam.Light) { Location = new Hex(0, 0, 0) };
+        board.AddTile(queen);
+        board.AddTile(mover);
+
+        Assert.IsTrue(mover.CalculateAvailable(board).Contains(new Hex(1, -1, 0)));
+
+        var top = new HiveLib.Bugs.Beetle(BugTeam.Dark) { Location = new Hex(1, -1, 0) };
+        board.AddTile(top);
+
+        Assert.IsFalse(mover.CalculateAvailable(board).Contains(new Hex(1, -1, 0)));
+    }
+
+    [TestMethod]
+    public void BeetleCannotDropMoreThanOneLevel()
+    {
+        var board = StateWithPiles(1, 1).Board;
+        var queen = new HiveLib.Bugs.QueenBee(BugTeam.Dark) { Location = new Hex(1, -1, 0) };
+        var under = new HiveLib.Bugs.Beetle(BugTeam.Dark) { Location = new Hex(1, -1, 0) };
+        var mover = new HiveLib.Bugs.Beetle(BugTeam.Light) { Location = new Hex(1, -1, 0) };
+        board.AddTile(queen);
+        board.AddTile(under);
+        board.AddTile(mover);
+
+        // Level 3 beside empty ground (level 1) is a two-level drop.
+        Assert.IsFalse(mover.CalculateAvailable(board).Contains(new Hex(2, -2, 0)));
+    }
+
+    [TestMethod]
+    public void LadyBugHopsTwiceOverPiecesThenDropsToGround()
+    {
+        var board = StateWithPiles(1, 1).Board;
+        // A straight line of three pieces: ladybug on the left end, so it must cross the other two.
+        var ladybug = new HiveLib.Bugs.LadyBug(BugTeam.Light) { Location = new Hex(0, 0, 0) };
+        board.AddTile(ladybug);
+        board.AddTile(new HiveLib.Bugs.QueenBee(BugTeam.Dark) { Location = new Hex(1, -1, 0) });
+        board.AddTile(new HiveLib.Bugs.QueenBee(BugTeam.Light) { Location = new Hex(2, -2, 0) });
+
+        var available = ladybug.CalculateAvailable(board);
+
+        Assert.IsTrue(available.Contains(new Hex(3, -3, 0)));
+        Assert.IsFalse(available.Contains(new Hex(0, 0, 0)), "cannot end where it started");
+        Assert.IsFalse(available.Contains(new Hex(1, -1, 0)), "cannot stop on a piece");
+        foreach (var hex in available)
+            Assert.IsFalse(board.ContainsTile(hex));
+    }
+
+    [TestMethod]
+    public void LadyBugIsNotBlockedByTallStacks()
+    {
+        var board = StateWithPiles(1, 1).Board;
+        var ladybug = new HiveLib.Bugs.LadyBug(BugTeam.Light) { Location = new Hex(0, 0, 0) };
+        board.AddTile(ladybug);
+        board.AddTile(new HiveLib.Bugs.QueenBee(BugTeam.Dark) { Location = new Hex(1, -1, 0) });
+        board.AddTile(new HiveLib.Bugs.QueenBee(BugTeam.Light) { Location = new Hex(2, -2, 0) });
+        var low = new HiveLib.Bugs.Beetle(BugTeam.Dark) { Location = new Hex(2, -2, 0) };
+        var mid = new HiveLib.Bugs.Beetle(BugTeam.Light) { Location = new Hex(2, -2, 0) };
+        var top = new HiveLib.Bugs.Beetle(BugTeam.Dark) { Location = new Hex(2, -2, 0) };
+        foreach (var beetle in new[] { low, mid, top })
+            board.AddTile(beetle);
+
+        Assert.IsTrue(ladybug.CalculateAvailable(board).Contains(new Hex(3, -3, 0)));
+    }
+
+    [TestMethod]
+    public void LadyBugCannotClimbBetweenTwoTallStacks()
+    {
+        // (3,-3,0) is only reachable by climbing onto (1,-1,0) and then (2,-2,0).
+        // That first climb squeezes between the two gate hexes beside it.
+        bool CanReachFarSide(bool tallGates)
+        {
+            var board = StateWithPiles(1, 1).Board;
+            var ladybug = new HiveLib.Bugs.LadyBug(BugTeam.Light) { Location = new Hex(0, 0, 0) };
+            board.AddTile(ladybug);
+            board.AddTile(new HiveLib.Bugs.QueenBee(BugTeam.Dark) { Location = new Hex(1, -1, 0) });
+            board.AddTile(new HiveLib.Bugs.QueenBee(BugTeam.Light) { Location = new Hex(2, -2, 0) });
+            foreach (var gate in new[] { new Hex(0, -1, 1), new Hex(1, 0, -1) })
+            {
+                board.AddTile(new HiveLib.Bugs.Spider(BugTeam.Dark) { Location = gate });
+                if (tallGates)
+                    board.AddTile(new HiveLib.Bugs.Beetle(BugTeam.Light) { Location = gate });
+            }
+            return ladybug.CalculateAvailable(board).Contains(new Hex(3, -3, 0));
+        }
+
+        Assert.IsTrue(CanReachFarSide(tallGates: false));
+        Assert.IsFalse(CanReachFarSide(tallGates: true));
+    }
+
+    [TestMethod]
+    public void LadyBugCanClimbWhenOnlyOneSideIsTall()
+    {
+        var board = StateWithPiles(1, 1).Board;
+        var ladybug = new HiveLib.Bugs.LadyBug(BugTeam.Light) { Location = new Hex(0, 0, 0) };
+        board.AddTile(ladybug);
+        board.AddTile(new HiveLib.Bugs.QueenBee(BugTeam.Dark) { Location = new Hex(1, -1, 0) });
+        board.AddTile(new HiveLib.Bugs.QueenBee(BugTeam.Light) { Location = new Hex(2, -2, 0) });
+        board.AddTile(new HiveLib.Bugs.Spider(BugTeam.Dark) { Location = new Hex(0, -1, 1) });
+        board.AddTile(new HiveLib.Bugs.Beetle(BugTeam.Light) { Location = new Hex(0, -1, 1) });
+
+        Assert.IsTrue(ladybug.CalculateAvailable(board).Contains(new Hex(3, -3, 0)));
     }
 }

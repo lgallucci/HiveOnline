@@ -21,10 +21,35 @@ namespace HiveLib.Bugs
 
         public override bool CanMoveTo(PlayingBoard board, Hex position)
         {
+            // A beetle can climb or drop at most one level per move.
+            if (Math.Abs(LandingLevel(board, position) - StackLevel()) > 1)
+                return false;
+
             if (CanHopOntoPiece(board, position) || HexHasNeighborNotMe(GetBoardWithoutMe(board), position))
                 return true;
 
             return false;
+        }
+
+        // 1 when on the ground, 2 when on top of one piece, and so on.
+        private int StackLevel()
+        {
+            var level = 1;
+            for (var covered = CoveredPiece; covered != null; covered = (covered as Beetle)?.CoveredPiece)
+                level++;
+            return level;
+        }
+
+        private static int LandingLevel(PlayingBoard board, Hex position)
+        {
+            var level = 1;
+            if (board.Tiles.TryGetValue(position.GetHashCode(), out var top))
+            {
+                level++;
+                for (var covered = (top as Beetle)?.CoveredPiece; covered != null; covered = (covered as Beetle)?.CoveredPiece)
+                    level++;
+            }
+            return level;
         }
 
         public override Dictionary<int, ITile> GetBoardWithoutMe(PlayingBoard board)
@@ -39,20 +64,8 @@ namespace HiveLib.Bugs
         }
 
         private bool CanHopOntoPiece(PlayingBoard board, Hex position)
-        {
+        {            
             return board.ContainsTile(position);
-
-            //      >-<
-            //    >-<A>-<
-            //   <C>---<D>
-            //    >-<B>-<
-            //      >-<
-            //If
-            //height(A) < height(C) and
-            //height(A) < height(D) and
-            //height(B) < height(C) and
-            //height(B) < height(D)
-            //then can't move !
         }
 
         public override List<Hex> CalculateAvailable(PlayingBoard board)
