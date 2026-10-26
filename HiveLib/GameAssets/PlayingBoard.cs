@@ -74,12 +74,25 @@ namespace HiveOnline.GameAssets
             Enumerable.Range(0, 6).All(i => ContainsTile(queen.Location.Neighbor(i)));
 
         public bool IsQueenSurrounded(BugTeam team) =>
-            _tiles.Values.Any(t => t.Team == team && t.Type == BugType.QueenBee && IsQueenSurrounded(t));
+            AllQueens().Any(t => t.Team == team && IsQueenSurrounded(t));
 
         public bool BothQueensSurrounded()
         {
-            var queens = _tiles.Values.Where(t => t.Type == BugType.QueenBee).ToList();
+            var queens = AllQueens().ToList();
             return queens.Count == 2 && queens.All(IsQueenSurrounded);
+        }
+
+        // Queens count even when buried under a beetle or a mosquito acting as one.
+        private IEnumerable<ITile> AllQueens()
+        {
+            foreach (var top in _tiles.Values)
+            {
+                for (var tile = top; tile != null; tile = (tile as HiveLib.Bugs.Beetle)?.CoveredPiece)
+                {
+                    if (tile.Type == BugType.QueenBee)
+                        yield return tile;
+                }
+            }
         }
 
         // Validates and applies the move of a piece already on the board, including choice abilities such as a copy or warp.

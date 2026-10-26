@@ -153,16 +153,7 @@ public sealed class HiveGameState
 
     private bool IsQueenSurrounded(BugTeam team)
     {
-        var queen = Board.Tiles.Values.FirstOrDefault(tile => tile.Team == team && tile.Type == BugType.QueenBee);
-        if (queen == null)
-            return false;
-
-        for (var index = 0; index < 6; index++)
-        {
-            if (!Board.ContainsTile(queen.Location.Neighbor(index)))
-                return false;
-        }
-        return true;
+        return Board.IsQueenSurrounded(team);
     }
 
     private Pile GetPile(BugTeam team) => Board.UserPile.Team == team ? Board.UserPile : Board.OpponentPile;
