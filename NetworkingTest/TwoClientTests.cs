@@ -130,6 +130,30 @@ public class TwoClientTests
     }
 
     [TestMethod]
+    public async Task LobbyShowsExpansionsAndChallengedPlayersExpansionsApply()
+    {
+        var a = await Connect();
+        var b = await Connect();
+        await a.Client.SendName("Alice");
+        await a.Client.SendExpansions("L");
+        await b.Client.SendName("Bob");
+        await b.Client.SendExpansions("PM");
+        await a.Client.EnterLobby();
+        await b.Client.EnterLobby();
+        var listForA = await a.WaitFor(m => m.StartsWith("LOBBY_LIST|") && m.Contains(",Bob (PM)"));
+        var listForB = await b.WaitFor(m => m.StartsWith("LOBBY_LIST|") && m.Contains(",Alice (L)"));
+        var aId = IdOf(listForB, "Alice (L)");
+
+        await a.Client.Challenge(IdOf(listForA, "Bob (PM)"));
+        await b.WaitFor(m => m == $"CHALLENGED|{aId},Alice (L)");
+        await b.Client.AcceptChallenge(aId);
+
+        await a.WaitFor(m => m == "EXPANSIONS|PM");
+        await b.WaitFor(m => m == "EXPANSIONS|PM");
+        await a.WaitFor(m => m == "OPPONENT_NAME|Bob");
+    }
+
+    [TestMethod]
     public async Task DeclinedChallengeNotifiesChallenger()
     {
         var (a, b, aId, bId) = await EnterLobbies();

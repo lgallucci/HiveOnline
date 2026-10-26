@@ -22,7 +22,7 @@ namespace HiveOnline
     {
         // SHA-256 of the server's public key, printed by "HiveServer --generate-cert". Leave empty for an
         // unencrypted server (local testing); HIVE_TLS_PIN overrides it.
-        private const string DefaultServerKeyPin = "196FEC9D9FD84FC6B90D514167E9B997CF4EEC4B123CD30055B4CF6E745729DB";
+        private string DefaultServerKeyPin = "196FEC9D9FD84FC6B90D514167E9B997CF4EEC4B123CD30055B4CF6E745729DB";
 
         private GameMode _gameMode;
         private HiveGameClient _hiveClient;
@@ -46,6 +46,9 @@ namespace HiveOnline
 
         public HiveOnlineGame(string address, int port)
         {
+            if (address == "localhost")
+                DefaultServerKeyPin = string.Empty;
+
             _address = address;
             _port = port;
             _graphicsEngine = new GraphicsEngine(this);
@@ -191,6 +194,7 @@ namespace HiveOnline
                     {
                         _team = lobbyEngine.AssignedTeam;
                         _opponentName = lobbyEngine.OpponentName;
+                        _selectedExpansions = lobbyEngine.GameExpansions.ToArray();
                         Window.Title = $"Hive - {_team}";
                     }
                     _gameEngine = new RunningGameEngine(_screenWidth, _screenHeight, _team, networkClient, useAi, _playerName, _opponentName, _selectedExpansions);
@@ -224,7 +228,7 @@ namespace HiveOnline
                 }
                 if (_gameState == GameState.Lobby && _previousState != GameState.Lobby)
                 {
-                    _gameEngine = new LobbyEngine(_hiveClient, _playerName);
+                    _gameEngine = new LobbyEngine(_hiveClient, _playerName, _selectedExpansions);
                 }
             }
             base.Update(gameTime);

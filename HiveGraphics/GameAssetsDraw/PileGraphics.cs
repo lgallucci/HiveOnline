@@ -31,12 +31,13 @@ public class PileGraphics : DrawableObject
         var halfTileSize = _tileSize / 2;
         tileDraw(new HexPoint(position.X + halfTileSize, position.Y + halfTileSize), new HexPoint(_tileSize, _tileSize));
 
-        DrawString(numberString, (int)position.X - Location.X);
+        DrawString(numberString, (int)position.X - Location.X, (int)position.Y);
     }
 
-    private void DrawString(string numberString, int bufferSize)
+    private void DrawString(string numberString, int bufferSize, int y)
     {
         var fontSize = Art.PileFont.MeasureString(numberString);
-        Context.SpriteBatch.DrawString(Art.PileFont, numberString, new Vector2(Location.Left + bufferSize + _tileSize - 10, Location.Bottom - fontSize.Y - 5), Color.MintCream);
+        Context.SpriteBatch.DrawString(Art.PileFont, numberString,
+            new Vector2(Location.Left + bufferSize + _tileSize - 10, y + _tileSize - fontSize.Y - 5), Color.MintCream);
     }
 }

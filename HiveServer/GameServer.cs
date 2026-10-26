@@ -96,6 +96,13 @@ namespace HiveServer
                 return;
             }
 
+            if (normalized.StartsWith("EXPANSIONS|", StringComparison.OrdinalIgnoreCase))
+            {
+                var requested = normalized.Substring(11).ToUpperInvariant();
+                client.Expansions = new string("LPM".Where(requested.Contains).ToArray());
+                return;
+            }
+
             if (normalized.StartsWith("CHALLENGE|", StringComparison.OrdinalIgnoreCase))
             {
                 await Challenge(client, normalized.Substring(10));
@@ -197,10 +204,15 @@ namespace HiveServer
             await AnnounceMatch(game, playerOne, playerTwo);
         }
 
-        private async Task AnnounceMatch(HiveGame game, ConnectedHiveClient playerOne, ConnectedHiveClient playerTwo)
+        private async Task AnnounceMatch(HiveGame game, ConnectedHiveClient playerOne, ConnectedHiveClient playerTwo, string expansions = "")
         {
             await playerOne.SendMessage($"MATCHED {playerOne.Identifier} {playerTwo.Identifier}");
             await playerTwo.SendMessage($"MATCHED {playerTwo.Identifier} {playerOne.Identifier}");
+            if (expansions.Length > 0)
+            {
+                await playerOne.SendMessage($"EXPANSIONS|{expansions}");
+                await playerTwo.SendMessage($"EXPANSIONS|{expansions}");
+            }
             await playerOne.SendMessage($"OPPONENT_NAME|{playerTwo.Name ?? "Opponent"}");
             await playerTwo.SendMessage($"OPPONENT_NAME|{playerOne.Name ?? "Opponent"}");
             await playerOne.SendMessage("YOU_ARE_PLAYER_1");

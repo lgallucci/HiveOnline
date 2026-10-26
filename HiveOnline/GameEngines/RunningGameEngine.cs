@@ -130,7 +130,7 @@ namespace HiveOnline
 
         // Directly above the player's name, which sits just above their pile (bottom left).
         private Microsoft.Xna.Framework.Rectangle QuitButton =>
-            new Microsoft.Xna.Framework.Rectangle(5, _view.ScreenSize.Y - 75 - 40 - 6 - 40, 100, 40);
+            new Microsoft.Xna.Framework.Rectangle(5, _view.GetPileBounds(_board.UserPile, false).Top - 40 - 6 - 40, 100, 40);
 
         private Microsoft.Xna.Framework.Rectangle QuitPanel => new Microsoft.Xna.Framework.Rectangle(_view.ScreenSize.X / 2 - 320, _view.ScreenSize.Y / 2 - 90, 640, 190);
 

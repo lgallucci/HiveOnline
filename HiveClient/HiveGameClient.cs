@@ -156,6 +156,8 @@ namespace HiveClient
                 await SendMessage($"NAME|{clean}");
         }
 
+        public Task SendExpansions(string codes) => SendMessage($"EXPANSIONS|{codes}");
+
         public Task EnterLobby() => SendMessage("LOBBY");
 
         public Task LeaveLobby() => SendMessage("LEAVE_LOBBY");

@@ -10,6 +10,7 @@ public sealed class BoardViewState
 {
     private const int TileSize = 75;
     private const int PlacementWidth = 100;
+    private const int BugTypesPerRow = 5;
     private const int ChatWidth = 500;
     private const int ChatHeight = 250;
     public const int ChatCollapsedHeight = 24;
@@ -75,7 +76,7 @@ public sealed class BoardViewState
 
     public Rectangle GetPileSlot(Pile pile, BugType bugType, bool opponent)
     {
-        var offset = 0;
+        var index = 0;
         foreach (var currentType in Enum.GetValues<BugType>())
         {
             if (currentType == BugType.Blank || pile.GetCount(currentType) == 0)
@@ -83,14 +84,16 @@ public sealed class BoardViewState
 
             if (currentType == bugType)
             {
+                var row = index / BugTypesPerRow;
+                var column = index % BugTypesPerRow;
                 var x = opponent
-                    ? ScreenSize.X - GetPileWidth(pile) - 5 + offset
-                    : 5 + offset;
-                var y = opponent ? 5 : ScreenSize.Y - 75;
+                    ? ScreenSize.X - GetPileWidth(pile) - 5 + column * PlacementWidth
+                    : 5 + column * PlacementWidth;
+                var y = opponent ? 5 + row * TileSize : ScreenSize.Y - TileSize - row * TileSize;
                 return new Rectangle(x, y, TileSize, TileSize);
             }
 
-            offset += PlacementWidth;
+            index++;
         }
 
         return Rectangle.Empty;
@@ -99,12 +102,23 @@ public sealed class BoardViewState
     public Rectangle GetPileBounds(Pile pile, bool opponent)
     {
         var width = GetPileWidth(pile);
+        var height = GetPileHeight(pile);
         var x = opponent ? ScreenSize.X - width - 5 : 5;
-        var y = opponent ? 5 : ScreenSize.Y - 75;
-        return new Rectangle(x, y, width, 75);
+        var y = opponent ? 5 : ScreenSize.Y - height;
+        return new Rectangle(x, y, width, height);
     }
 
     private int GetPileWidth(Pile pile)
+    {
+        return Math.Min(GetPileTypeCount(pile), BugTypesPerRow) * PlacementWidth;
+    }
+
+    private int GetPileHeight(Pile pile)
+    {
+        return GetPileTypeCount(pile) > BugTypesPerRow ? TileSize * 2 : TileSize;
+    }
+
+    private int GetPileTypeCount(Pile pile)
     {
         var count = 0;
         foreach (var bugType in Enum.GetValues<BugType>())
@@ -112,6 +126,6 @@ public sealed class BoardViewState
             if (bugType != BugType.Blank && pile.GetCount(bugType) > 0)
                 count++;
         }
-        return count * PlacementWidth;
+        return count;
     }
 }

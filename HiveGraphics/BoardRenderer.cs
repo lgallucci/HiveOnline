@@ -30,8 +30,9 @@ public sealed class BoardRenderer
     public void Draw(PlayingBoard board, BoardViewState view, RenderContext context)
     {
         BindContext(context);
-        _boardGraphics.Draw(board.UserName, board.OpponentName, board.CurrentTurn);
         SetPileBounds(view, board);
+        _boardGraphics.Draw(board.UserName, board.OpponentName, board.CurrentTurn,
+            view.GetPileBounds(board.UserPile, false), view.GetPileBounds(board.OpponentPile, true));
 
         if (_renderTilesDirty || _renderedBoardVersion != board.Version)
         {

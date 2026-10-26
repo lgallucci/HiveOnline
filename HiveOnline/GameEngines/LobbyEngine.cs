@@ -24,6 +24,8 @@ namespace HiveOnline.GameEngines
         private bool _left;
         private bool _connectionLost;
         private readonly string _playerName;
+        private readonly string _expansionCodes;
+        private BugType[] _gameExpansions = Array.Empty<BugType>();
         private int _width = 800;
         private MouseState _previousMouse = Mouse.GetState();
 
@@ -33,10 +35,14 @@ namespace HiveOnline.GameEngines
         public BugTeam AssignedTeam => _assignedTeam == 1 ? BugTeam.Dark : BugTeam.Light;
         public string OpponentName => _opponentName;
 
-        public LobbyEngine(HiveGameClient client, string playerName)
+        // The expansions of the player who received the challenge.
+        public IReadOnlyCollection<BugType> GameExpansions => _gameExpansions;
+
+        public LobbyEngine(HiveGameClient client, string playerName, IEnumerable<BugType> expansions = null)
         {
             _client = client;
             _playerName = playerName;
+            _expansionCodes = ExpansionCodes.ToCodes(expansions);
             _client.MessageReceived += OnMessage;
             _ = EnterAsync(playerName);
         }
@@ -44,6 +50,7 @@ namespace HiveOnline.GameEngines
         private async System.Threading.Tasks.Task EnterAsync(string playerName)
         {
             await _client.SendName(playerName);
+            await _client.SendExpansions(_expansionCodes);
             await _client.EnterLobby();
         }
 
@@ -103,6 +110,9 @@ namespace HiveOnline.GameEngines
                     case "CHALLENGE_DECLINED":
                         _challengedId = null;
                         _status = "Your challenge was declined";
+                        break;
+                    case "EXPANSIONS":
+                        _gameExpansions = ExpansionCodes.FromCodes(fields.Length > 1 ? fields[1] : null);
                         break;
                     case "OPPONENT_NAME":
                         if (fields.Length > 1)

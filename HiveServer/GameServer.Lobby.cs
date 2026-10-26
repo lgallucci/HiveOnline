@@ -74,7 +74,7 @@ namespace HiveServer
                         outbox.Add((previous, $"CHALLENGE_CANCELED|{client.Identifier}"));
 
                     _challenges[client.Identifier] = target.Identifier;
-                    outbox.Add((target, $"CHALLENGED|{client.Identifier},{client.Name}"));
+                    outbox.Add((target, $"CHALLENGED|{client.Identifier},{LobbyLabel(client)}"));
                     Trace($"{client.Name} challenged {target.Name}");
                 }
             }
@@ -144,7 +144,7 @@ namespace HiveServer
             }
 
             await Flush(outbox);
-            await AnnounceMatch(game, challenger, client);
+            await AnnounceMatch(game, challenger, client, client.Expansions);
         }
 
         // Removes the client from the lobby and cancels every challenge it is part of.
@@ -169,13 +169,17 @@ namespace HiveServer
                 BuildLobbyBroadcast(outbox);
         }
 
+        // Name shown in the lobby, followed by the expansion letters when the player picked any: "Bob (LM)".
+        private static string LobbyLabel(ConnectedHiveClient client) =>
+            client.Expansions.Length > 0 ? $"{client.Name} ({client.Expansions})" : client.Name ?? string.Empty;
+
         // Each lobby member receives the list of the other members: LOBBY_LIST|id,name|id,name
         private void BuildLobbyBroadcast(List<(ConnectedHiveClient To, string Message)> outbox)
         {
             var members = _clients.Where(c => c.InLobby).ToList();
             foreach (var recipient in members)
             {
-                var others = members.Where(m => !ReferenceEquals(m, recipient)).Select(m => $"{m.Identifier},{m.Name}");
+                var others = members.Where(m => !ReferenceEquals(m, recipient)).Select(m => $"{m.Identifier},{LobbyLabel(m)}");
                 outbox.Add((recipient, string.Join("|", new[] { "LOBBY_LIST" }.Concat(others))));
             }
         }
