@@ -37,7 +37,6 @@ namespace HiveOnline
         private readonly bool _useAI;
         private readonly HiveGameClient _networkClient;
         private bool _choosingAbility;
-        private BugType? _abilityChoice;
         private readonly ConcurrentQueue<string> _pendingNetworkMessages = new ConcurrentQueue<string>();
         private BugTeam _playerTeam;
         private bool _opponentLeft;
@@ -311,19 +310,19 @@ namespace HiveOnline
                     if (_choosingAbility && selectedTile is IChoosesAbility chooser)
                     {
                         // Second click: the clicked target decides which moves are available.
-                        _abilityChoice = chooser.GetChoice(_board, clickedHex);
+                        chooser.Choice = chooser.GetChoice(_board, clickedHex);
                         _choosingAbility = false;
                         _board.ClearAvailableTiles();
-                        _board.AddAvailableHexes(chooser.CalculateAvailableFor(_board, _abilityChoice));
+                        _board.AddAvailableHexes(chooser.CalculateAvailableFor(_board, chooser.Choice));
                     }
                     else if (selectedTile != null)
                     {
                         var fromHex = selectedTile.Location;
                         var destinationHex = _board.AvailableTiles[clickedHex.GetHashCode()];
-                        var copiedBug = selectedTile is IChoosesAbility ? _abilityChoice : null;
-                        _abilityChoice = null;
+                        var copiedBug = (selectedTile as IChoosesAbility)?.Choice;
                         if (TryApplyMove(selectedTile, fromHex, destinationHex, _playerTeam, out var appliedTile, copiedBug))
                         {
+                            _board.SelectedTile = null;
                             if (_networkClient != null && _networkClient.IsConnected)
                                 _ = _networkClient.SendMove(appliedTile.Type.ToString(), fromHex.q, fromHex.r, fromHex.s, destinationHex.q, destinationHex.r, destinationHex.s, appliedTile.Team.ToString(), copiedBug?.ToString());
 
@@ -362,8 +361,8 @@ namespace HiveOnline
                 if (leftClicked)
                 {
                     var tile = _board.Tiles[clickedHex.GetHashCode()];
+                    ClearAbilityPreview();
                     _choosingAbility = false;
-                    _abilityChoice = null;
 
                     if (tile.Team == _playerTeam && tile.CanMove(_board) && (_board.SelectedTile == null || tile.GetHashCode() != _board.SelectedTile.GetHashCode()))
                     {
@@ -850,15 +849,11 @@ namespace HiveOnline
                 var chooser = requestedTile as IChoosesAbility;
                 if (chooser is not null)
                     chooser.Choice = copiedBug;
-                try
-                {
-                    if (!requestedTile.CanMove(_board) || !requestedTile.CanMoveTo(_board, destination))
-                        return false;
-                }
-                finally
+                if (!requestedTile.CanMove(_board) || !requestedTile.CanMoveTo(_board, destination))
                 {
                     if (chooser is not null)
                         chooser.Choice = null;
+                    return false;
                 }
 
                 _board.RemoveTile(boardTile);
@@ -871,6 +866,12 @@ namespace HiveOnline
             _board.SelectedTile = null;
             _board.ClearAvailableTiles();
             return true;
+        }
+
+        private void ClearAbilityChoices(BugTeam team)
+        {
+            foreach (var chooser in _board.Tiles.Values.Where(t => t.Team == team).OfType<IChoosesAbility>())
+                chooser.Choice = null;
         }
 
         private void SwitchTurns()
@@ -887,6 +888,7 @@ namespace HiveOnline
                 _playingState = PlayingState.YourTurn;
             }
 
+            ClearAbilityChoices(_playingState == PlayingState.YourTurn ? _playerTeam : _opponentTeam);
             UpdateTurnDisplay();
         }
 
@@ -994,10 +996,16 @@ namespace HiveOnline
                 DeselectAll();
         }
 
+        private void ClearAbilityPreview()
+        {
+            if (_board.SelectedTile is IChoosesAbility chooser)
+                chooser.Choice = null;
+        }
+
         private void DeselectAll()
         {
+            ClearAbilityPreview();
             _choosingAbility = false;
-            _abilityChoice = null;
             _board.SelectedTile = null;
             _board.ClearAvailableTiles();
         }

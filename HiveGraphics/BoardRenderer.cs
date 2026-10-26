@@ -114,6 +114,7 @@ public sealed class BoardRenderer
             var shift = (levels - 1) * overlap;
             if (tile.Stunned)
                 DrawStunnedOutline(tile, view, shift);
+            DrawShownChoice(tile, view, location, size, shift);
 
             // Very light outline on the top tile of a stack so stacked beetles stand out.
             if (beetle.CoveredPiece != null)
@@ -128,6 +129,23 @@ public sealed class BoardRenderer
         _tileGraphics.Draw(tile.Type, tile.Team, location, size);
         if (tile.Stunned)
             DrawStunnedOutline(tile, view, 0);
+    }
+
+    private const double ChoiceIconScale = 1.0 / 3;
+
+    // Small copy of the ability a piece is using, drawn on its lower right.
+    private void DrawShownChoice(ITile tile, BoardViewState view, HexPoint location, HexPoint size, int shift)
+    {
+        if (tile is not IChoosesAbility { Choice: { } shown })
+            return;
+
+        var center = new HexPoint(location.X - shift + size.X* 0.18, location.Y - shift + size.Y * 0.18);
+        _tileGraphics.Draw(shown, tile.Team, center, new HexPoint(size.X * ChoiceIconScale, size.Y * ChoiceIconScale));
+
+        var outline = view.Layout.PolygonCorners(tile.Location)
+            .Select(c => new HexPoint(center.X + (c.X - location.X) * ChoiceIconScale, center.Y + (c.Y - location.Y) * ChoiceIconScale))
+            .ToList();
+        _boardGraphics.DrawSubtleOutline(outline, tile.Team == BugTeam.Light ? Color.Black : Color.White, 1f);
     }
 
     private void DrawStunnedOutline(ITile tile, BoardViewState view, int shift)

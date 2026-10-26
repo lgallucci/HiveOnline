@@ -15,7 +15,14 @@ namespace HiveLib.Bugs
         }
 
         // The ability being used for the current move. Only set while a move is being evaluated or applied.
-        public BugType? Choice { get; set; }
+        private BugType? _choice;
+
+        // While elevated it is always a Beetle, so that choice can't be cleared until it climbs down.
+        public BugType? Choice
+        {
+            get => IsElevated ? BugType.Beetle : _choice;
+            set => _choice = value;
+        }
 
         public bool IsElevated => CoveredPiece != null;
 

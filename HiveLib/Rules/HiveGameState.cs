@@ -46,7 +46,7 @@ public sealed class HiveGameState
         if (_consecutivePasses >= 2)
             IsFinished = true;
         else
-            CurrentTeam = Opponent(team);
+            StartTurn(Opponent(team));
 
         Board.ClearAvailableTiles();
         return MoveResult.Accepted(false, IsFinished);
@@ -90,17 +90,13 @@ public sealed class HiveGameState
                     return MoveResult.Rejected("INVALID_COPY");
                 chooser.Choice = move.CopiedBug;
             }
-            try
-            {
-                if (tile is Tile modelTile && !modelTile.CanMove(Board))
-                    return MoveResult.Rejected("PIECE_CANNOT_MOVE");
-                if (!tile.CanMoveTo(Board, move.To))
-                    return MoveResult.Rejected("INVALID_DESTINATION");
-            }
-            finally
+            var rejection = tile is Tile modelTile && !modelTile.CanMove(Board) ? "PIECE_CANNOT_MOVE"
+                : !tile.CanMoveTo(Board, move.To) ? "INVALID_DESTINATION" : null;
+            if (rejection != null)
             {
                 if (chooser is not null)
                     chooser.Choice = null;
+                return MoveResult.Rejected(rejection);
             }
         }
 
@@ -122,10 +118,17 @@ public sealed class HiveGameState
         if (IsFinished)
             WinningTeam = lightSurrounded && darkSurrounded ? null : lightSurrounded ? BugTeam.Dark : BugTeam.Light;
         else
-            CurrentTeam = Opponent(CurrentTeam);
+            StartTurn(Opponent(CurrentTeam));
 
         Board.ClearAvailableTiles();
         return MoveResult.Accepted(isPlacement, IsFinished);
+    }
+
+    private void StartTurn(BugTeam team)
+    {
+        CurrentTeam = team;
+        foreach (var chooser in Board.Tiles.Values.Where(t => t.Team == team).OfType<IChoosesAbility>())
+            chooser.Choice = null;
     }
 
     private bool MustPlayQueen(BugTeam team) =>

@@ -7,7 +7,7 @@ namespace HiveLib.GameAssets
     // A tile that needs an extra click on a target before its destinations are known (e.g. Mosquito, Pillbug).
     public interface IChoosesAbility
     {
-        // Choice applied while evaluating or applying a move. Null when none is active.
+        // The ability chosen for the current move. It stays set (and is drawn) until the owner's next turn starts.
         BugType? Choice { get; set; }
 
         // Hexes the player may click first. Empty means no choice is needed.
