@@ -6,4 +6,5 @@ public readonly record struct HiveMove(
     BugTeam Team,
     BugType BugType,
     Hex From,
-    Hex To);
+    Hex To,
+    BugType? CopiedBug = null);

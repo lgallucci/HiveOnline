@@ -1,6 +1,7 @@
 using HiveContracts;
 using HiveOnline.GameAssets;
 using HiveLib.GameAssets;
+using HiveLib.Bugs;
 using System;
 using System.Linq;
 using System.Collections.ObjectModel;
@@ -82,10 +83,25 @@ public sealed class HiveGameState
             tile = Board.Tiles[move.From.GetHashCode()];
             if (tile.Team != move.Team || tile.Type != move.BugType)
                 return MoveResult.Rejected("INVALID_SOURCE");
-            if (tile is Tile modelTile && !modelTile.CanMove(Board))
-                return MoveResult.Rejected("PIECE_CANNOT_MOVE");
-            if (!tile.CanMoveTo(Board, move.To))
-                return MoveResult.Rejected("INVALID_DESTINATION");
+            var chooser = tile as IChoosesAbility;
+            if (chooser is not null)
+            {
+                if (!chooser.IsChoiceValid(Board, move.CopiedBug))
+                    return MoveResult.Rejected("INVALID_COPY");
+                chooser.Choice = move.CopiedBug;
+            }
+            try
+            {
+                if (tile is Tile modelTile && !modelTile.CanMove(Board))
+                    return MoveResult.Rejected("PIECE_CANNOT_MOVE");
+                if (!tile.CanMoveTo(Board, move.To))
+                    return MoveResult.Rejected("INVALID_DESTINATION");
+            }
+            finally
+            {
+                if (chooser is not null)
+                    chooser.Choice = null;
+            }
         }
 
         if (isPlacement)

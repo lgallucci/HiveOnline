@@ -10,6 +10,7 @@ namespace HiveLib.GameAssets
         BugTeam Team { get; set; }
         Hex Location { get; set; }
         bool IsInspecting { get; set; }
+        bool Stunned { get; set; }
 
         List<Hex> CalculateAvailable(PlayingBoard board);
         bool CanMove(PlayingBoard board);

@@ -15,6 +15,8 @@ namespace HiveOnline.GameAssets
 
         public bool IsInspecting { get; set; }
 
+        public bool Stunned { get; set; }
+
         public override int GetHashCode()
         {
             return Location.GetHashCode();
@@ -79,6 +81,9 @@ namespace HiveOnline.GameAssets
         }
         public virtual bool CanMove(PlayingBoard board)
         {
+            if (Stunned)
+                return false;
+
             if (board.Tiles.Count == 1)
                 return true;
 

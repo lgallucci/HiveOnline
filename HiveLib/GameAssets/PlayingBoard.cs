@@ -14,9 +14,11 @@ namespace HiveOnline.GameAssets
         public ITile SelectedTile { get; set; }
         private readonly Dictionary<int, ITile> _tiles = new Dictionary<int, ITile>();
         private readonly Dictionary<int, Hex> _availableTiles = new Dictionary<int, Hex>();
+        private readonly Dictionary<int, Hex> _choiceTargets = new Dictionary<int, Hex>();
         private readonly Dictionary<int, Hex> _testSpots = new Dictionary<int, Hex>();
         public IReadOnlyDictionary<int, ITile> Tiles => _tiles;
         public IReadOnlyDictionary<int, Hex> AvailableTiles => _availableTiles;
+        public IReadOnlyDictionary<int, Hex> ChoiceTargets => _choiceTargets;
 
         public string UserName { get; set; } = "TestUser";
         public Pile UserPile { get; set; }
@@ -85,7 +87,13 @@ namespace HiveOnline.GameAssets
         {
             _testSpots.Clear();
             _availableTiles.Clear();
+            _choiceTargets.Clear();
+        }
 
+        public void AddChoiceTargets(List<Hex> hexes)
+        {
+            foreach (var hex in hexes)
+                _choiceTargets[hex.GetHashCode()] = hex;
         }
 
         public void ClearTestSpots()

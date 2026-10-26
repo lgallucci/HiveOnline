@@ -103,6 +103,8 @@ namespace HiveLib.Bugs
 
         public override bool CanMove(PlayingBoard board)
         {
+            if (Stunned)
+                return false;
             if (CoveredPiece != null)
                 return true;
             else

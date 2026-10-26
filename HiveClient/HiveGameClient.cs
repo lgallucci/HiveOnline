@@ -143,9 +143,11 @@ namespace HiveClient
             await _tcpClient.Send(new ArraySegment<byte>(bytes, 0, bytes.Length));
         }
 
-        public async Task SendMove(string pieceType, int fromQ, int fromR, int fromS, int toQ, int toR, int toS, string team = "LIGHT")
+        public async Task SendMove(string pieceType, int fromQ, int fromR, int fromS, int toQ, int toR, int toS, string team = "LIGHT", string copiedType = null)
         {
             var payload = $"MOVE|{team}|{pieceType}|{fromQ},{fromR},{fromS}|{toQ},{toR},{toS}";
+            if (!string.IsNullOrEmpty(copiedType))
+                payload += $"|{copiedType}";
             await SendMessage(payload);
         }
 

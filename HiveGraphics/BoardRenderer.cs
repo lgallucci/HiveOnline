@@ -54,6 +54,9 @@ public sealed class BoardRenderer
         foreach (var testSpot in board.TestSpots.Values)
             _boardGraphics.DrawHexagon(view.Layout, testSpot, new Color(190, 80, 255));
 
+        foreach (var choiceTarget in board.ChoiceTargets.Values)
+            _boardGraphics.DrawHexagon(view.Layout, choiceTarget, new Color(255, 145, 40));
+
         foreach (var available in board.AvailableTiles.Values)
             _boardGraphics.DrawHexagon(view.Layout, available, new Color(170, 189, 100));
 
@@ -107,12 +110,14 @@ public sealed class BoardRenderer
         if (tile is Beetle beetle)
         {
             var levels = DrawBeetleStack(beetle, view, location, size, 0, beetle.IsInspecting);
+            var overlap = (int)(view.Layout.size.X * (beetle.IsInspecting ? .75 : .1));
+            var shift = (levels - 1) * overlap;
+            if (tile.Stunned)
+                DrawStunnedOutline(tile, view, shift);
 
             // Very light outline on the top tile of a stack so stacked beetles stand out.
             if (beetle.CoveredPiece != null)
             {
-                var overlap = (int)(view.Layout.size.X * (beetle.IsInspecting ? .75 : .1));
-                var shift = (levels - 1) * overlap;
                 var corners = view.Layout.PolygonCorners(tile.Location)
                     .Select(c => new HexPoint(c.X - shift, c.Y - shift)).ToList();
                 _boardGraphics.DrawSubtleOutline(corners, new Color(255, 0, 150, 90), 2f);
@@ -121,6 +126,15 @@ public sealed class BoardRenderer
         }
 
         _tileGraphics.Draw(tile.Type, tile.Team, location, size);
+        if (tile.Stunned)
+            DrawStunnedOutline(tile, view, 0);
+    }
+
+    private void DrawStunnedOutline(ITile tile, BoardViewState view, int shift)
+    {
+        var corners = view.Layout.PolygonCorners(tile.Location)
+            .Select(c => new HexPoint(c.X - shift, c.Y - shift)).ToList();
+        _boardGraphics.DrawSubtleOutline(corners, Color.Red, 4f);
     }
 
     private int DrawBeetleStack(Beetle beetle, BoardViewState view, HexPoint location, HexPoint size, int level, bool isInspecting)

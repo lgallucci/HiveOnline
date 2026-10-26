@@ -36,6 +36,8 @@ namespace HiveOnline
         private readonly HiveGameState _rules;
         private readonly bool _useAI;
         private readonly HiveGameClient _networkClient;
+        private bool _choosingAbility;
+        private BugType? _abilityChoice;
         private readonly ConcurrentQueue<string> _pendingNetworkMessages = new ConcurrentQueue<string>();
         private BugTeam _playerTeam;
         private bool _opponentLeft;
@@ -270,8 +272,7 @@ namespace HiveOnline
             {
                 if (leftClicked && _playingState == PlayingState.YourTurn)
                 {
-                    _board.SelectedTile = null;
-                    _board.ClearAvailableTiles();
+                    DeselectAll();
 
                     var bug = _view.GetPileTile(_board.UserPile, mouseState.X, mouseState.Y, false);
 
@@ -298,21 +299,33 @@ namespace HiveOnline
                 if (leftClicked)
                     HandleChatClick(mouseState);
             }
-            else if (!draggingCamera && _playingState == PlayingState.YourTurn && _board.AvailableTiles.ContainsKey(clickedHex.GetHashCode()))
+            else if (!draggingCamera && _playingState == PlayingState.YourTurn &&
+                (_board.AvailableTiles.ContainsKey(clickedHex.GetHashCode()) ||
+                 _board.ChoiceTargets.ContainsKey(clickedHex.GetHashCode())))
             {
                 if (leftClicked)
                 {
                     //Get Selected Tile (from board or pile?)
                     var selectedTile = _board.SelectedTile;
 
-                    if (selectedTile != null)
+                    if (_choosingAbility && selectedTile is IChoosesAbility chooser)
+                    {
+                        // Second click: the clicked target decides which moves are available.
+                        _abilityChoice = chooser.GetChoice(_board, clickedHex);
+                        _choosingAbility = false;
+                        _board.ClearAvailableTiles();
+                        _board.AddAvailableHexes(chooser.CalculateAvailableFor(_board, _abilityChoice));
+                    }
+                    else if (selectedTile != null)
                     {
                         var fromHex = selectedTile.Location;
                         var destinationHex = _board.AvailableTiles[clickedHex.GetHashCode()];
-                        if (TryApplyMove(selectedTile, fromHex, destinationHex, _playerTeam, out var appliedTile))
+                        var copiedBug = selectedTile is IChoosesAbility ? _abilityChoice : null;
+                        _abilityChoice = null;
+                        if (TryApplyMove(selectedTile, fromHex, destinationHex, _playerTeam, out var appliedTile, copiedBug))
                         {
                             if (_networkClient != null && _networkClient.IsConnected)
-                                _ = _networkClient.SendMove(appliedTile.Type.ToString(), fromHex.q, fromHex.r, fromHex.s, destinationHex.q, destinationHex.r, destinationHex.s, appliedTile.Team.ToString());
+                                _ = _networkClient.SendMove(appliedTile.Type.ToString(), fromHex.q, fromHex.r, fromHex.s, destinationHex.q, destinationHex.r, destinationHex.s, appliedTile.Team.ToString(), copiedBug?.ToString());
 
                             if (_useAI)
                             {
@@ -349,6 +362,8 @@ namespace HiveOnline
                 if (leftClicked)
                 {
                     var tile = _board.Tiles[clickedHex.GetHashCode()];
+                    _choosingAbility = false;
+                    _abilityChoice = null;
 
                     if (tile.Team == _playerTeam && tile.CanMove(_board) && (_board.SelectedTile == null || tile.GetHashCode() != _board.SelectedTile.GetHashCode()))
                     {
@@ -370,8 +385,18 @@ namespace HiveOnline
 
                         //Calculate and set Available 
                         _board.ClearAvailableTiles();
-                        var available = tile.CalculateAvailable(_board);
-                        _board.AddAvailableHexes(available);
+                        var choiceTargets = (tile as IChoosesAbility)?.GetChoiceTargets(_board);
+                        if (choiceTargets?.Count > 0)
+                        {
+                            // First click: highlight the targets the player must choose from.
+                            _choosingAbility = true;
+                            _board.AddChoiceTargets(choiceTargets);
+                        }
+                        else
+                        {
+                            var available = tile.CalculateAvailable(_board);
+                            _board.AddAvailableHexes(available);
+                        }
                     }
                     else
                     {
@@ -722,11 +747,15 @@ namespace HiveOnline
                 var fromHex = new Hex(int.Parse(fromCoords[0]), int.Parse(fromCoords[1]), int.Parse(fromCoords[2]));
                 var toHex = new Hex(int.Parse(toCoords[0]), int.Parse(toCoords[1]), int.Parse(toCoords[2]));
 
+                BugType? copiedBug = null;
+                if (parts.Length > 5 && Enum.TryParse<BugType>(parts[5], true, out var parsedCopy))
+                    copiedBug = parsedCopy;
+
                 var remoteTile = GetTileForRemoteMove(team, type, fromHex, toHex);
                 if (remoteTile == null)
                     return;
 
-                if (!TryApplyMove(remoteTile, fromHex, toHex, team, out _))
+                if (!TryApplyMove(remoteTile, fromHex, toHex, team, out _, copiedBug))
                     return;
 
                 if (team == _opponentTeam)
@@ -788,11 +817,11 @@ namespace HiveOnline
         }
 
         private bool TryApplyMove(ITile requestedTile, Hex from, Hex destination,
-            BugTeam team, out ITile appliedTile)
+            BugTeam team, out ITile appliedTile, BugType? copiedBug = null)
         {
             if (!_useAI)
             {
-                var result = _rules.TryApplyMove(new HiveMove(team, requestedTile.Type, from, destination));
+                var result = _rules.TryApplyMove(new HiveMove(team, requestedTile.Type, from, destination, copiedBug));
                 appliedTile = result.IsValid ? _board.Tiles[destination.GetHashCode()] : null;
                 if (appliedTile != null)
                     OnPiecePlaced(appliedTile);
@@ -815,10 +844,22 @@ namespace HiveOnline
             }
             else
             {
-                if (!_board.Tiles.TryGetValue(from.GetHashCode(), out var boardTile) ||
-                    boardTile != requestedTile || !requestedTile.CanMove(_board) ||
-                    !requestedTile.CanMoveTo(_board, destination))
+                if (!_board.Tiles.TryGetValue(from.GetHashCode(), out var boardTile) || boardTile != requestedTile)
                     return false;
+
+                var chooser = requestedTile as IChoosesAbility;
+                if (chooser is not null)
+                    chooser.Choice = copiedBug;
+                try
+                {
+                    if (!requestedTile.CanMove(_board) || !requestedTile.CanMoveTo(_board, destination))
+                        return false;
+                }
+                finally
+                {
+                    if (chooser is not null)
+                        chooser.Choice = null;
+                }
 
                 _board.RemoveTile(boardTile);
                 appliedTile = requestedTile;
@@ -955,6 +996,8 @@ namespace HiveOnline
 
         private void DeselectAll()
         {
+            _choosingAbility = false;
+            _abilityChoice = null;
             _board.SelectedTile = null;
             _board.ClearAvailableTiles();
         }
