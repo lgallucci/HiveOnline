@@ -7,4 +7,5 @@ public readonly record struct HiveMove(
     BugType BugType,
     Hex From,
     Hex To,
-    BugType? CopiedBug = null);
+    BugType? CopiedBug = null,
+    Hex? WarpTarget = null);

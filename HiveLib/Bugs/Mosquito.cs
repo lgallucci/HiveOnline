@@ -44,22 +44,60 @@ namespace HiveLib.Bugs
         public List<BugType> GetCopyOptions(PlayingBoard board) =>
             IsElevated ? new List<BugType> { BugType.Beetle } : GetCopySources(board).Select(s => s.Type).Distinct().ToList();
 
-        public List<Hex> GetChoiceTargets(PlayingBoard board)
+        public Hex? Target { get; set; }
+
+        public void ClearChoice()
         {
-            var targets = GetCopySources(board).Where(s => CanMoveAs(board, s.Type)).Select(s => s.Location).ToList();
-            // Evaluating the copied abilities leaves their path previews behind; none should show before a choice.
-            board.ClearTestSpots();
-            return targets;
+            _choice = null;
+            Target = null;
         }
 
-        public BugType? GetChoice(PlayingBoard board, Hex target) =>
-            board.Tiles.TryGetValue(target.GetHashCode(), out var tile) ? tile.Type : null;
+        public List<Hex> GetChoiceTargets(PlayingBoard board)
+        {
+            if (IsElevated)
+                return new List<Hex>();
 
-        public List<Hex> CalculateAvailableFor(PlayingBoard board, BugType? choice) =>
-            choice.HasValue ? CalculateAvailableAs(board, choice.Value) : new List<Hex>();
+            if (_choice is null)
+            {
+                var targets = GetCopySources(board).Where(s => CanMoveAs(board, s.Type)).Select(s => s.Location).ToList();
+                // Evaluating the copied abilities leaves their path previews behind; none should show before a choice.
+                board.ClearTestSpots();
+                return targets;
+            }
 
-        public bool IsChoiceValid(PlayingBoard board, BugType? choice) =>
-            IsElevated || (choice.HasValue && GetCopyOptions(board).Contains(choice.Value));
+            // A copied Pillbug still has to pick the piece it warps.
+            return _choice == BugType.PillBug && Target is null ? PillbugWarp.GetTargets(board, this) : new List<Hex>();
+        }
+
+        public bool TryChoose(PlayingBoard board, Hex hex)
+        {
+            if (!GetChoiceTargets(board).Any(t => t == hex))
+                return false;
+
+            if (_choice is null)
+                _choice = board.Tiles[hex.GetHashCode()].Type;
+            else
+                Target = hex;
+            return true;
+        }
+
+        public List<Hex> GetDestinations(PlayingBoard board)
+        {
+            if (Choice is not { } type)
+                return new List<Hex>();
+            if (Target.HasValue)
+                return PillbugWarp.GetDestinations(board, this, Target.Value);
+            return CanMoveAs(board, type) ? CalculateAvailableAs(board, type) : new List<Hex>();
+        }
+
+        public bool IsSelectionValid(PlayingBoard board)
+        {
+            if (IsElevated)
+                return Target is null;
+            if (_choice is null || !GetCopyOptions(board).Contains(_choice.Value))
+                return false;
+            return Target is null || (_choice == BugType.PillBug && PillbugWarp.GetTargets(board, this).Any(t => t == Target.Value));
+        }
 
         public List<Hex> CalculateAvailableAs(PlayingBoard board, BugType type)
         {
@@ -70,7 +108,7 @@ namespace HiveLib.Bugs
         public bool CanMoveAs(PlayingBoard board, BugType type)
         {
             var proxy = CreateProxy(IsElevated ? BugType.Beetle : type);
-            return proxy is not null && proxy.CanMove(board) && proxy.CalculateAvailable(board).Count > 0;
+            return proxy is not null && proxy.HasMoves(board);
         }
 
         private IEnumerable<BugType> ActiveTypes(PlayingBoard board)
@@ -89,6 +127,8 @@ namespace HiveLib.Bugs
         public override bool CanMove(PlayingBoard board) =>
             !Stunned && ActiveTypes(board).Any(t => CanMoveAs(board, t));
 
+        public override bool HasMoves(PlayingBoard board) => CanMove(board);
+
         public override bool HasFreedomToMove(PlayingBoard board) =>
             ActiveTypes(board).Any(t => CalculateAvailableAs(board, t).Count > 0);
 
@@ -101,6 +141,7 @@ namespace HiveLib.Bugs
                 BugType.Grasshopper => new Grasshopper(Team),
                 BugType.SoldierAnt => new SoldierAnt(Team),
                 BugType.LadyBug => new LadyBug(Team),
+                BugType.PillBug => new PillBug(Team),
                 BugType.Beetle => new Beetle(Team) { CoveredPiece = CoveredPiece },
                 _ => null
             };

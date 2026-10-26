@@ -11,9 +11,11 @@ namespace HiveLib.GameAssets
         Hex Location { get; set; }
         bool IsInspecting { get; set; }
         bool Stunned { get; set; }
+        void AdvanceStun();
 
         List<Hex> CalculateAvailable(PlayingBoard board);
         bool CanMove(PlayingBoard board);
+        bool HasMoves(PlayingBoard board);
         bool CanMoveTo(PlayingBoard board, Hex position);
         void RunAddRules(ITile tile);
         ITile RunRemoveRules();

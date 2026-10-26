@@ -20,6 +20,9 @@ namespace HiveOnline.GameAssets
         public IReadOnlyDictionary<int, Hex> AvailableTiles => _availableTiles;
         public IReadOnlyDictionary<int, Hex> ChoiceTargets => _choiceTargets;
 
+        // Where a piece most recently landed. The Pillbug can't lift a piece that was just moved.
+        public Hex? LastMovedHex { get; private set; }
+
         public string UserName { get; set; } = "TestUser";
         public Pile UserPile { get; set; }
         public string OpponentName { get; set; } = "TestOpponent";
@@ -50,8 +53,19 @@ namespace HiveOnline.GameAssets
             piece.Location = position.Location;
         }
 
+        // Called once per move or pass to age every stun, including pieces under a stack.
+        public void ClearStunned()
+        {
+            foreach (var top in _tiles.Values)
+            {
+                for (var tile = top; tile != null; tile = (tile as HiveLib.Bugs.Beetle)?.CoveredPiece)
+                    tile.AdvanceStun();
+            }
+        }
+
         public void AddTile(ITile tile)
         {
+            LastMovedHex = tile.Location;
             if (ContainsTile(tile)) 
             {
                 tile.RunAddRules(_tiles[tile.GetHashCode()]);

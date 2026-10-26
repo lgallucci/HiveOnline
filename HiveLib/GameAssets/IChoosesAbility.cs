@@ -4,19 +4,28 @@ using System.Collections.Generic;
 
 namespace HiveLib.GameAssets
 {
-    // A tile that needs an extra click on a target before its destinations are known (e.g. Mosquito, Pillbug).
+    // A tile whose move takes extra clicks before its destinations are known (Mosquito copying, Pillbug warping).
+    // The player clicks choice targets until none remain, then clicks a destination.
     public interface IChoosesAbility
     {
-        // The ability chosen for the current move. It stays set (and is drawn) until the owner's next turn starts.
+        // Ability copied for the current move. It stays set (and is drawn) until the owner's next turn starts.
         BugType? Choice { get; set; }
 
-        // Hexes the player may click first. Empty means no choice is needed.
+        // Piece being acted on (the piece a Pillbug warps). Only used while the move is being built.
+        Hex? Target { get; set; }
+
+        void ClearChoice();
+
+        // Hexes the player may click now to advance the choice. Empty once nothing is left to choose.
         List<Hex> GetChoiceTargets(PlayingBoard board);
 
-        BugType? GetChoice(PlayingBoard board, Hex target);
+        // Applies a click on one of the choice targets. Returns false if the hex isn't a valid choice.
+        bool TryChoose(PlayingBoard board, Hex hex);
 
-        List<Hex> CalculateAvailableFor(PlayingBoard board, BugType? choice);
+        // Hexes the piece may move to given the choices made so far.
+        List<Hex> GetDestinations(PlayingBoard board);
 
-        bool IsChoiceValid(PlayingBoard board, BugType? choice);
+        // True if Choice and Target are consistent with the board. Used to validate moves from the network.
+        bool IsSelectionValid(PlayingBoard board);
     }
 }

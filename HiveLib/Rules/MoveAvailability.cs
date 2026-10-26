@@ -26,6 +26,6 @@ public static class MoveAvailability
         if (!queenPlaced)
             return false;
 
-        return board.Tiles.Values.Any(tile => tile.Team == team && tile.CanMove(board) && tile.CalculateAvailable(board).Count > 0);
+        return board.Tiles.Values.Any(tile => tile.Team == team && tile.HasMoves(board));
     }
 }

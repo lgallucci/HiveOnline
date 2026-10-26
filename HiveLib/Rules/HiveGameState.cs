@@ -42,6 +42,7 @@ public sealed class HiveGameState
         if (HasLegalMove(team))
             return MoveResult.Rejected("HAS_LEGAL_MOVE");
 
+        Board.ClearStunned();
         _consecutivePasses++;
         if (_consecutivePasses >= 2)
             IsFinished = true;
@@ -64,6 +65,7 @@ public sealed class HiveGameState
             return MoveResult.Rejected("INVALID_PIECE");
 
         var isPlacement = !Board.Tiles.ContainsKey(move.From.GetHashCode());
+        var warping = move.WarpTarget.HasValue && !isPlacement;
         ITile tile;
         Pile pile = null;
 
@@ -86,29 +88,44 @@ public sealed class HiveGameState
             var chooser = tile as IChoosesAbility;
             if (chooser is not null)
             {
-                if (!chooser.IsChoiceValid(Board, move.CopiedBug))
-                    return MoveResult.Rejected("INVALID_COPY");
                 chooser.Choice = move.CopiedBug;
+                chooser.Target = move.WarpTarget;
+                var rejection = !chooser.IsSelectionValid(Board) ? "INVALID_COPY"
+                    // Warping doesn't move the warper, so only a normal move needs it to be free to leave.
+                    : !warping && !((Tile)tile).CanMove(Board) ? "PIECE_CANNOT_MOVE"
+                    : !chooser.GetDestinations(Board).Any(hex => hex == move.To) ? "INVALID_DESTINATION" : null;
+                if (rejection != null)
+                {
+                    chooser.ClearChoice();
+                    return MoveResult.Rejected(rejection);
+                }
             }
-            var rejection = tile is Tile modelTile && !modelTile.CanMove(Board) ? "PIECE_CANNOT_MOVE"
-                : !tile.CanMoveTo(Board, move.To) ? "INVALID_DESTINATION" : null;
-            if (rejection != null)
-            {
-                if (chooser is not null)
-                    chooser.Choice = null;
-                return MoveResult.Rejected(rejection);
-            }
+            else if (move.WarpTarget.HasValue || move.CopiedBug.HasValue)
+                return MoveResult.Rejected("INVALID_COPY");
+            else if (tile is Tile modelTile && !modelTile.CanMove(Board))
+                return MoveResult.Rejected("PIECE_CANNOT_MOVE");
+            else if (!tile.CanMoveTo(Board, move.To))
+                return MoveResult.Rejected("INVALID_DESTINATION");
         }
 
-        if (isPlacement)
-            tile = pile.GetTile(move.BugType);
+        Board.ClearStunned();
+        if (warping)
+        {
+            PillbugWarp.Apply(Board, move.WarpTarget.Value, move.To);
+            ((IChoosesAbility)tile).Target = null;
+        }
         else
-            Board.RemoveTile(tile);
+        {
+            if (isPlacement)
+                tile = pile.GetTile(move.BugType);
+            else
+                Board.RemoveTile(tile);
 
-        tile.Location = move.To;
-        Board.AddTile(tile);
-        if (tile.Type == BugType.QueenBee)
-            _queenPlaced[GetTeamIndex(move.Team)] = true;
+            tile.Location = move.To;
+            Board.AddTile(tile);
+            if (tile.Type == BugType.QueenBee)
+                _queenPlaced[GetTeamIndex(move.Team)] = true;
+        }
 
         _turnCounts[GetTeamIndex(move.Team)]++;
         _consecutivePasses = 0;
@@ -128,7 +145,7 @@ public sealed class HiveGameState
     {
         CurrentTeam = team;
         foreach (var chooser in Board.Tiles.Values.Where(t => t.Team == team).OfType<IChoosesAbility>())
-            chooser.Choice = null;
+            chooser.ClearChoice();
     }
 
     private bool MustPlayQueen(BugTeam team) =>

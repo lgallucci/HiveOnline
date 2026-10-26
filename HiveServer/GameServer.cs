@@ -347,20 +347,28 @@ namespace HiveServer
         {
             move = default;
             var parts = message.Split('|');
-            if ((parts.Length != 5 && parts.Length != 6) || !parts[0].Equals("MOVE", StringComparison.OrdinalIgnoreCase) ||
+            if ((parts.Length < 5 || parts.Length > 7) || !parts[0].Equals("MOVE", StringComparison.OrdinalIgnoreCase) ||
                 !Enum.TryParse(parts[2], true, out BugType bugType) ||
                 !TryParseHex(parts[3], out var from) || !TryParseHex(parts[4], out var to))
                 return false;
 
             BugType? copied = null;
-            if (parts.Length == 6)
+            if (parts.Length > 5 && parts[5].Length > 0)
             {
                 if (!Enum.TryParse(parts[5], true, out BugType copiedType))
                     return false;
                 copied = copiedType;
             }
 
-            move = new HiveMove(senderTeam, bugType, from, to, copied);
+            Hex? warpTarget = null;
+            if (parts.Length > 6)
+            {
+                if (!TryParseHex(parts[6], out var warpHex))
+                    return false;
+                warpTarget = warpHex;
+            }
+
+            move = new HiveMove(senderTeam, bugType, from, to, copied, warpTarget);
             return true;
         }
 

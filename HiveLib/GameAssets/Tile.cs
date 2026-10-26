@@ -15,7 +15,25 @@ namespace HiveOnline.GameAssets
 
         public bool IsInspecting { get; set; }
 
-        public bool Stunned { get; set; }
+        private bool _stunned;
+        private int _stunAge;
+
+        public bool Stunned
+        {
+            get => _stunned;
+            set
+            {
+                _stunned = value;
+                _stunAge = 0;
+            }
+        }
+
+        // A stun survives the next turn and is lifted when the one after is played.
+        public void AdvanceStun()
+        {
+            if (_stunned && ++_stunAge >= 2)
+                Stunned = false;
+        }
 
         public override int GetHashCode()
         {
@@ -120,6 +138,9 @@ namespace HiveOnline.GameAssets
 
             //if problem list is empty then return false;
         }
+
+        // True if the piece can move somewhere this turn.
+        public virtual bool HasMoves(PlayingBoard board) => CanMove(board) && CalculateAvailable(board).Count > 0;
 
         public virtual bool HasFreedomToMove(PlayingBoard board)
         {
