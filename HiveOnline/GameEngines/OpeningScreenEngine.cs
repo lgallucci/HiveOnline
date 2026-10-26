@@ -3,6 +3,7 @@ using HiveGraphics;
 using HiveOnline.GameAssets;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
+using System.Collections.Generic;
 
 namespace HiveOnline.GameEngines
 {
@@ -19,8 +20,19 @@ namespace HiveOnline.GameEngines
             (GameMode.Multiplayer, "Online Multiplayer"),
         };
 
+        private const int ExpansionButtonWidth = 180;
+        private const int ExpansionButtonSpacing = 12;
+
+        private static readonly (BugType Type, string Label)[] ExpansionOptions =
+        {
+            (BugType.LadyBug, "Ladybug"),
+            (BugType.PillBug, "Pillbug"),
+            (BugType.Mosquito, "Mosquito"),
+        };
+
         private Point _screenSize = new Point(1200, 800);
         private MouseState _previousMouse = Mouse.GetState();
+        private readonly HashSet<BugType> _selectedExpansions = new HashSet<BugType>();
 
         private const int MaxNameLength = 16;
         private string _playerName = string.Empty;
@@ -31,6 +43,8 @@ namespace HiveOnline.GameEngines
 
         public string PlayerName => _playerName.Trim();
 
+        public IReadOnlyCollection<BugType> SelectedExpansions => _selectedExpansions;
+
         private Rectangle NameField => new Rectangle(_screenSize.X / 2 - ButtonWidth / 2, GetButton(0).Y - ButtonHeight - ButtonSpacing - 20, ButtonWidth, ButtonHeight);
 
         private Rectangle GetButton(int index)
@@ -38,6 +52,14 @@ namespace HiveOnline.GameEngines
             var totalHeight = Options.Length * ButtonHeight + (Options.Length - 1) * ButtonSpacing;
             var top = _screenSize.Y / 2 - totalHeight / 2 + 40;
             return new Rectangle(_screenSize.X / 2 - ButtonWidth / 2, top + index * (ButtonHeight + ButtonSpacing), ButtonWidth, ButtonHeight);
+        }
+
+        private Rectangle GetExpansionButton(int index)
+        {
+            var totalWidth = ExpansionOptions.Length * ExpansionButtonWidth + (ExpansionOptions.Length - 1) * ExpansionButtonSpacing;
+            var left = (_screenSize.X - totalWidth) / 2;
+            var top = _screenSize.Y - ButtonHeight - 20;
+            return new Rectangle(left + index * (ExpansionButtonWidth + ExpansionButtonSpacing), top, ExpansionButtonWidth, ButtonHeight);
         }
 
         public override void Draw(GraphicsEngine _graphicsEngine)
@@ -56,6 +78,16 @@ namespace HiveOnline.GameEngines
             {
                 var bounds = GetButton(i);
                 _graphicsEngine.DrawButton(bounds, Options[i].Label, bounds.Contains(mouse.X, mouse.Y));
+            }
+
+            _graphicsEngine.DrawStringTop("Expansions", Color.White, GetExpansionButton(0).Y - 35);
+            for (var i = 0; i < ExpansionOptions.Length; i++)
+            {
+                var bounds = GetExpansionButton(i);
+                var option = ExpansionOptions[i];
+                var selected = _selectedExpansions.Contains(option.Type);
+                _graphicsEngine.DrawButton(bounds, $"[{(selected ? "x" : " ")}] {option.Label}",
+                    selected || bounds.Contains(mouse.X, mouse.Y));
             }
         }
 
@@ -94,6 +126,17 @@ namespace HiveOnline.GameEngines
             _editingName = NameField.Contains(mouse.X, mouse.Y);
             if (_editingName)
                 return;
+
+            for (var i = 0; i < ExpansionOptions.Length; i++)
+            {
+                if (!GetExpansionButton(i).Contains(mouse.X, mouse.Y))
+                    continue;
+
+                var expansion = ExpansionOptions[i].Type;
+                if (!_selectedExpansions.Add(expansion))
+                    _selectedExpansions.Remove(expansion);
+                return;
+            }
 
             for (var i = 0; i < Options.Length; i++)
             {

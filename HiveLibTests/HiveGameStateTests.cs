@@ -2,6 +2,7 @@ using HiveContracts;
 using HiveLib.Rules;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Collections.ObjectModel;
 
 namespace HiveLibTests;
 
@@ -92,7 +93,7 @@ public class HiveGameStateTests
 
     private static HiveGameState StateWithPiles(int lightPieces, int darkPieces)
     {
-        var board = new HiveOnline.GameAssets.PlayingBoard
+        var board = new HiveOnline.GameAssets.PlayingBoard(new ReadOnlyCollection<BugType>(Array.Empty<BugType>()))
         {
             UserPile = new HiveOnline.GameAssets.Pile(BugTeam.Light, 0, 0, 0, 0, 0, lightPieces, 0, 0),
             OpponentPile = new HiveOnline.GameAssets.Pile(BugTeam.Dark, 0, 0, 0, 0, 0, darkPieces, 0, 0)

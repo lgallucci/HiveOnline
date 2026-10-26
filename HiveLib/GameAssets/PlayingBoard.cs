@@ -1,9 +1,9 @@
 ﻿using HiveContracts;
 using HiveLib;
 using HiveLib.GameAssets;
-using HiveLib.SearchAlgorithms;
 using System.Collections.Generic;
 using System;
+using System.Linq;
 
 namespace HiveOnline.GameAssets
 {
@@ -27,11 +27,17 @@ namespace HiveOnline.GameAssets
         public IReadOnlyDictionary<int, Hex> TestSpots => _testSpots;
         public int Version { get; private set; }
 
-        public PlayingBoard()
+        public PlayingBoard(IReadOnlyCollection<BugType> selectedExpansions)
         {
             ChatWindow = new ChatBox();
-            UserPile = new Pile(BugTeam.Light);
-            OpponentPile = new Pile(BugTeam.Dark);
+            UserPile = new Pile(BugTeam.Light, 
+                ladyBugCount: selectedExpansions?.Contains(BugType.LadyBug) == true ? 1 : 0,
+                mosquitoCount: selectedExpansions?.Contains(BugType.Mosquito) == true ? 1 : 0,
+                pillBugCount: selectedExpansions?.Contains(BugType.PillBug) == true ? 1 : 0);
+            OpponentPile = new Pile(BugTeam.Dark, 
+                ladyBugCount: selectedExpansions?.Contains(BugType.LadyBug) == true ? 1 : 0,
+                mosquitoCount: selectedExpansions?.Contains(BugType.Mosquito) == true ? 1 : 0,
+                pillBugCount: selectedExpansions?.Contains(BugType.PillBug) == true ? 1 : 0);
         }
 
         public void Move(Tile piece, Tile position)

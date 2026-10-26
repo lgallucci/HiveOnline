@@ -10,8 +10,6 @@ using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Data.Common;
-using System.Drawing;
 using System.Linq;
 
 namespace HiveOnline
@@ -58,7 +56,7 @@ namespace HiveOnline
         private bool _playerQueenPlaced = false;
         private bool _opponentQueenPlaced = false;
 
-        public RunningGameEngine(int screenWidth, int screenHeight, BugTeam team, HiveGameClient networkClient = null, bool useAi = true, string playerName = null, string opponentName = null)
+        public RunningGameEngine(int screenWidth, int screenHeight, BugTeam team, HiveGameClient networkClient = null, bool useAi = true, string playerName = null, string opponentName = null, IReadOnlyCollection<BugType> selectedExpansions = null)
         {
             _screenWidth = screenWidth;
             _screenHeight = screenHeight;
@@ -66,7 +64,7 @@ namespace HiveOnline
             _useAI = useAi;
             _playerTeam = team;
             _opponentTeam = team == BugTeam.Light ? BugTeam.Dark : BugTeam.Light;
-            _board = new PlayingBoard();
+            _board = new PlayingBoard(selectedExpansions);
             if (team == BugTeam.Dark)
             {
                 // The local player's pile is always the one drawn at the bottom of the screen.

@@ -5,6 +5,7 @@ using HiveOnline.GameEngines;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace HiveOnline
@@ -31,6 +32,7 @@ namespace HiveOnline
         private BugTeam _team = BugTeam.Light;
         private string _playerName = string.Empty;
         private string _opponentName;
+        private BugType[] _selectedExpansions = Array.Empty<BugType>();
 
         private GraphicsEngine _graphicsEngine;
         private GameEngine _gameEngine;
@@ -161,6 +163,7 @@ namespace HiveOnline
                 {
                     _gameMode = openingScreen.SelectedMode.Value;
                     _playerName = openingScreen.PlayerName;
+                    _selectedExpansions = openingScreen.SelectedExpansions.ToArray();
                     if (_gameMode == GameMode.LocalAi)
                     {
                         if (_playerName.Length == 0)
@@ -190,14 +193,14 @@ namespace HiveOnline
                         _opponentName = lobbyEngine.OpponentName;
                         Window.Title = $"Hive - {_team}";
                     }
-                    _gameEngine = new RunningGameEngine(_screenWidth, _screenHeight, _team, networkClient, useAi, _playerName, _opponentName);
+                    _gameEngine = new RunningGameEngine(_screenWidth, _screenHeight, _team, networkClient, useAi, _playerName, _opponentName, _selectedExpansions);
                     SetWindowSize();
                 }
                 if (_gameEngine is RunningGameEngine finished && finished.RestartRequested)
                 {
                     finished.Detach();
                     var rematchClient = _gameMode == GameMode.Multiplayer ? _hiveClient : null;
-                    _gameEngine = new RunningGameEngine(_screenWidth, _screenHeight, _team, rematchClient, _gameMode == GameMode.LocalAi, _playerName, _opponentName);
+                    _gameEngine = new RunningGameEngine(_screenWidth, _screenHeight, _team, rematchClient, _gameMode == GameMode.LocalAi, _playerName, _opponentName, _selectedExpansions);
                     SetWindowSize();
                 }
                 if (_gameState == GameState.OpeningScreen && _previousState != GameState.OpeningScreen)

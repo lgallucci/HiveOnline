@@ -3,6 +3,7 @@ using HiveOnline.GameAssets;
 using HiveLib.GameAssets;
 using System;
 using System.Linq;
+using System.Collections.ObjectModel;
 
 namespace HiveLib.Rules;
 
@@ -14,7 +15,7 @@ public sealed class HiveGameState
 
     public HiveGameState(PlayingBoard board = null, BugTeam startingTeam = BugTeam.Light)
     {
-        Board = board ?? new PlayingBoard();
+        Board = board ?? new PlayingBoard(new ReadOnlyCollection<BugType>(Array.Empty<BugType>()));
         CurrentTeam = startingTeam;
     }
 
