@@ -201,46 +201,18 @@ namespace HiveOnline
 
             ProcessNetworkMessages();
 
-            if (_confirmingQuit)
-            {
-                if (leftClicked && QuitYesButton.Contains(mouseState.X, mouseState.Y))
-                {
-                    Detach();
-                    _gameState = GameState.OpeningScreen;
-                }
-                else if (leftClicked && QuitNoButton.Contains(mouseState.X, mouseState.Y))
-                {
-                    _confirmingQuit = false;
-                }
-
+            if (HandleQuitInput(mouseState, leftClicked, ref _gameState))
                 return;
-            }
-
-            if (leftClicked && QuitButton.Contains(mouseState.X, mouseState.Y))
-            {
-                _confirmingQuit = true;
-                return;
-            }
 
             if (_board.ChatWindow.IsTyping)
-            {
                 ApplyChatInput(KeyboardHelper.ReadChatInput());
-            }
 
             HexPoint originHexPoint = _view.Layout.origin;
             HexPoint originalSize = _view.Layout.size;
+            var clickedHex = _view.Layout.PixelToHex(new HexPoint(mouseState.X, mouseState.Y)).HexRound();
 
-            var fractionalHex = _view.Layout.PixelToHex(new HexPoint(mouseState.X, mouseState.Y));
-            var clickedHex = fractionalHex.HexRound();
-
-            // Expanding a stack is view-only, so it works on any turn and after the game ends.
-            if (rightClicked && _board.ContainsTile(clickedHex) &&
-                !_view.ContainsChat(mouseState.X, mouseState.Y) &&
-                !_view.ContainsPile(_board.UserPile, mouseState.X, mouseState.Y, false))
-            {
-                var inspected = _board.Tiles[clickedHex.GetHashCode()];
-                inspected.IsInspecting = !inspected.IsInspecting;
-            }
+            if (rightClicked)
+                ToggleStackInspection(mouseState, clickedHex);
 
             // Selection never survives the end of your turn or the end of the game.
             if (_playingState != PlayingState.YourTurn && _board.SelectedTile != null)
@@ -249,159 +221,229 @@ namespace HiveOnline
             // Allow camera movement after the game ends, but block all piece interaction.
             if (HandleCompletedGame(mouseState, ref originHexPoint, ref originalSize))
             {
-                // Chat stays usable after the game is over.
-                if (leftClicked && _view.ContainsChat(mouseState.X, mouseState.Y))
-                    HandleChatClick(mouseState);
-                else if (leftClicked && CanRematch && RematchButton.Contains(mouseState.X, mouseState.Y))
-                    HandleRematchClick();
-
+                HandleGameOverClicks(mouseState, leftClicked);
                 _view.SetLayout(originalSize, originHexPoint);
                 return;
             }
 
-            // Handle AI opponent turn
+            // Don't process player input during the AI turn
             if (HandleAiTurn(gameTime))
+                return;
+
+            if (!HandleBoardInput(mouseState, leftClicked, clickedHex))
+                HandleCameraInput(mouseState, ref originHexPoint);
+
+            if (mouseState.ScrollWheelValue != lastScrollWheelValue)
+                originalSize = HandleCameraResize(_board, mouseState);
+
+            _view.SetLayout(originalSize, originHexPoint);
+        }
+
+        // Returns true while the quit dialog is open or being opened, which blocks all other input.
+        private bool HandleQuitInput(MouseState mouseState, bool leftClicked, ref GameState gameState)
+        {
+            if (_confirmingQuit)
             {
-                return; // Don't process player input during AI turn
+                if (leftClicked && QuitYesButton.Contains(mouseState.X, mouseState.Y))
+                {
+                    Detach();
+                    gameState = GameState.OpeningScreen;
+                }
+                else if (leftClicked && QuitNoButton.Contains(mouseState.X, mouseState.Y))
+                {
+                    _confirmingQuit = false;
+                }
+
+                return true;
             }
 
-            //Enter Layout
+            if (leftClicked && QuitButton.Contains(mouseState.X, mouseState.Y))
+            {
+                _confirmingQuit = true;
+                return true;
+            }
+
+            return false;
+        }
+
+        // Expanding a stack is view-only, so it works on any turn and after the game ends.
+        private void ToggleStackInspection(MouseState mouseState, Hex clickedHex)
+        {
+            if (!_board.ContainsTile(clickedHex) ||
+                _view.ContainsChat(mouseState.X, mouseState.Y) ||
+                _view.ContainsPile(_board.UserPile, mouseState.X, mouseState.Y, false))
+                return;
+
+            var inspected = _board.Tiles[clickedHex.GetHashCode()];
+            inspected.IsInspecting = !inspected.IsInspecting;
+        }
+
+        // Chat and rematch stay usable after the game is over.
+        private void HandleGameOverClicks(MouseState mouseState, bool leftClicked)
+        {
+            if (!leftClicked)
+                return;
+
+            if (_view.ContainsChat(mouseState.X, mouseState.Y))
+                HandleChatClick(mouseState);
+            else if (CanRematch && RematchButton.Contains(mouseState.X, mouseState.Y))
+                HandleRematchClick();
+        }
+
+        // Returns true when the mouse is over something other than the empty board, so the camera must not drag.
+        private bool HandleBoardInput(MouseState mouseState, bool leftClicked, Hex clickedHex)
+        {
             if (_view.ContainsPile(_board.UserPile, mouseState.X, mouseState.Y, false))
             {
                 if (leftClicked && _playingState == PlayingState.YourTurn)
-                {
-                    DeselectAll();
-
-                    var bug = _view.GetPileTile(_board.UserPile, mouseState.X, mouseState.Y, false);
-
-                    if (bug == null)
-                        return;
-
-                    // Check if Queen must be placed this turn
-                    if (MustPlayQueen(bug))
-                    {
-                        // Can only place Queen
-                        return;
-                    }
-
-                    if (bug.Team == _playerTeam)
-                    {
-                        _board.SelectedTile = bug;
-                        _board.AddAvailableHexes(_board.UserPile.CalculateAvailable(_board, _playerTeam));
-                    }
-                }
+                    HandlePileClick(mouseState);
+                return true;
             }
-            //Enter Chat Box
-            else if (_view.ContainsChat(mouseState.X, mouseState.Y))
+
+            if (_view.ContainsChat(mouseState.X, mouseState.Y))
             {
                 if (leftClicked)
                     HandleChatClick(mouseState);
+                return true;
             }
-            else if (!draggingCamera && _playingState == PlayingState.YourTurn &&
-                (_board.AvailableTiles.ContainsKey(clickedHex.GetHashCode()) ||
-                 _board.ChoiceTargets.ContainsKey(clickedHex.GetHashCode())))
+
+            if (draggingCamera || _playingState != PlayingState.YourTurn)
+                return false;
+
+            var key = clickedHex.GetHashCode();
+            if (_board.AvailableTiles.ContainsKey(key) || _board.ChoiceTargets.ContainsKey(key))
             {
                 if (leftClicked)
-                {
-                    //Get Selected Tile (from board or pile?)
-                    var selectedTile = _board.SelectedTile;
-
-                    if (selectedTile is IChoosesAbility chooser && _board.ChoiceTargets.ContainsKey(clickedHex.GetHashCode()))
-                    {
-                        // Extra click: the clicked piece narrows down which moves are available.
-                        chooser.TryChoose(_board, clickedHex);
-                        ShowMoveHighlights(selectedTile);
-                    }
-                    else if (selectedTile != null && _board.AvailableTiles.ContainsKey(clickedHex.GetHashCode()))
-                    {
-                        var fromHex = selectedTile.Location;
-                        var destinationHex = _board.AvailableTiles[clickedHex.GetHashCode()];
-                        var copiedBug = (selectedTile as IChoosesAbility)?.Choice;
-                        var warpTarget = (selectedTile as IChoosesAbility)?.Target;
-                        if (TryApplyMove(selectedTile, fromHex, destinationHex, _playerTeam, out var appliedTile, copiedBug, warpTarget))
-                        {
-                            _board.SelectedTile = null;
-                            if (_networkClient != null && _networkClient.IsConnected)
-                                _ = _networkClient.SendMove(appliedTile.Type.ToString(), fromHex.q, fromHex.r, fromHex.s, destinationHex.q, destinationHex.r, destinationHex.s, appliedTile.Team.ToString(), copiedBug?.ToString(),
-                                    warpTarget is { } warped ? $"{warped.q},{warped.r},{warped.s}" : null);
-
-                            if (_useAI)
-                            {
-                                SwitchTurns();
-                                CheckWinCondition();
-                            }
-                            else if (IsNetworkGame)
-                            {
-                                _playerTurnCount++;
-                                _playingState = PlayingState.OpponentsTurn;
-                                UpdateTurnDisplay();
-                                CheckNetworkResult();
-                            }
-                            else
-                            {
-                                EndLocalTurn();
-                            }
-
-                            topMost = default(Hex); bottomMost = default(Hex); leftMost = default(Hex); rightMost = default(Hex);
-                            foreach (var hex in _board.Tiles.Select(t => t.Value))
-                            {
-                                if (hex.Location.s + (-1 * hex.Location.r) > topMost.s + (-1 * topMost.r)) topMost = hex.Location;
-                                if (hex.Location.s + (-1 * hex.Location.r) < bottomMost.s + (-1 * bottomMost.r)) bottomMost = hex.Location;
-                                if (hex.Location.q < leftMost.q) leftMost = hex.Location;
-                                if (hex.Location.q > rightMost.q) rightMost = hex.Location;
-                            }
-                        }
-                    }
-                }
+                    HandleMoveClick(clickedHex);
+                return true;
             }
-            //Enter Hex on Board
-            else if (!draggingCamera && _playingState == PlayingState.YourTurn && _board.ContainsTile(clickedHex))
+
+            if (_board.ContainsTile(clickedHex))
             {
                 if (leftClicked)
-                {
-                    var tile = _board.Tiles[clickedHex.GetHashCode()];
-                    ClearAbilityPreview();
-
-                    if (tile.Team == _playerTeam && tile.CanMove(_board) && (_board.SelectedTile == null || tile.GetHashCode() != _board.SelectedTile.GetHashCode()))
-                    {
-                        //Set Selected
-                        _board.SelectedTile = tile;
-
-                        // Check if Queen must be placed this turn
-                        if (MustPlayQueen(tile))
-                        {
-                            // Can only place Queen
-                            return;
-                        }
-
-                        // Prevent movement until Queen is placed
-                        if (!CanMoveAnyPiece(_playerTeam))
-                        {
-                            return; // Can't move until Queen is placed
-                        }
-
-                        //Calculate and set Available 
-                        (tile as IChoosesAbility)?.ClearChoice();
-                        ShowMoveHighlights(tile);
-                    }
-                    else
-                    {
-                        _board.SelectedTile = null;
-                        _board.ClearAvailableTiles();
-                    }
-                }
+                    HandleTileClick(clickedHex);
+                return true;
             }
-            else//Drag
+
+            return false;
+        }
+
+        private void HandlePileClick(MouseState mouseState)
+        {
+            DeselectAll();
+
+            var bug = _view.GetPileTile(_board.UserPile, mouseState.X, mouseState.Y, false);
+            if (bug == null || MustPlayQueen(bug) || bug.Team != _playerTeam)
+                return;
+
+            _board.SelectedTile = bug;
+            _board.AddAvailableHexes(_board.UserPile.CalculateAvailable(_board, _playerTeam));
+        }
+
+        private void HandleTileClick(Hex clickedHex)
+        {
+            var tile = _board.Tiles[clickedHex.GetHashCode()];
+            ClearAbilityPreview();
+
+            var isNewSelection = tile.Team == _playerTeam && tile.CanMove(_board) &&
+                (_board.SelectedTile == null || tile.GetHashCode() != _board.SelectedTile.GetHashCode());
+            if (!isNewSelection)
             {
-                HandleCameraInput(mouseState, ref originHexPoint);
+                _board.SelectedTile = null;
+                _board.ClearAvailableTiles();
+                return;
             }
 
-            if (mouseState.ScrollWheelValue != lastScrollWheelValue)
+            _board.SelectedTile = tile;
+
+            // The queen must be placed first, and nothing can move until it is.
+            if (MustPlayQueen(tile) || !CanMoveAnyPiece(_playerTeam))
+                return;
+
+            (tile as IChoosesAbility)?.ClearChoice();
+            ShowMoveHighlights(tile);
+        }
+
+        private void HandleMoveClick(Hex clickedHex)
+        {
+            var selectedTile = _board.SelectedTile;
+
+            if (selectedTile is IChoosesAbility chooser && _board.ChoiceTargets.ContainsKey(clickedHex.GetHashCode()))
             {
-                originalSize = HandleCameraResize(_board, mouseState);
+                // Extra click: the clicked piece narrows down which moves are available.
+                chooser.TryChoose(_board, clickedHex);
+                ShowMoveHighlights(selectedTile);
+                return;
             }
 
-            _view.SetLayout(originalSize, originHexPoint);
+            if (selectedTile == null || !_board.AvailableTiles.ContainsKey(clickedHex.GetHashCode()))
+                return;
+
+            var fromHex = selectedTile.Location;
+            var destinationHex = _board.AvailableTiles[clickedHex.GetHashCode()];
+            var copiedBug = (selectedTile as IChoosesAbility)?.Choice;
+            var warpTarget = (selectedTile as IChoosesAbility)?.Target;
+            if (!TryApplyMove(selectedTile, fromHex, destinationHex, _playerTeam, out var appliedTile, copiedBug, warpTarget))
+                return;
+
+            _board.SelectedTile = null;
+            SendMoveToServer(appliedTile, fromHex, destinationHex, copiedBug, warpTarget);
+            AdvanceAfterLocalMove();
+            UpdateBoardExtremes();
+        }
+
+        private void SendMoveToServer(ITile movedTile, Hex from, Hex to, BugType? copiedBug, Hex? warpTarget)
+        {
+            if (_networkClient == null || !_networkClient.IsConnected)
+                return;
+
+            _ = _networkClient.SendMove(movedTile.Type.ToString(), from.q, from.r, from.s, to.q, to.r, to.s, movedTile.Team.ToString(), copiedBug?.ToString(),
+                warpTarget is { } warped ? $"{warped.q},{warped.r},{warped.s}" : null);
+        }
+
+        private void AdvanceAfterLocalMove()
+        {
+            if (_useAI)
+            {
+                SwitchTurns();
+                CheckWinCondition();
+            }
+            else if (IsNetworkGame)
+            {
+                _playerTurnCount++;
+                _playingState = PlayingState.OpponentsTurn;
+                UpdateTurnDisplay();
+                CheckNetworkResult();
+            }
+            else
+            {
+                EndLocalTurn();
+            }
+        }
+
+        // The camera limits keep at least the outermost pieces on screen.
+        private void UpdateBoardExtremes()
+        {
+            topMost = default(Hex); bottomMost = default(Hex); leftMost = default(Hex); rightMost = default(Hex);
+            foreach (var hex in _board.Tiles.Select(t => t.Value))
+            {
+                if (hex.Location.s + (-1 * hex.Location.r) > topMost.s + (-1 * topMost.r)) topMost = hex.Location;
+                if (hex.Location.s + (-1 * hex.Location.r) < bottomMost.s + (-1 * bottomMost.r)) bottomMost = hex.Location;
+                if (hex.Location.q < leftMost.q) leftMost = hex.Location;
+                if (hex.Location.q > rightMost.q) rightMost = hex.Location;
+            }
+        }
+
+        private bool ExtremesFitOnScreen(Layout layout)
+        {
+            var top = layout.HexToPixel(topMost);
+            var bottom = layout.HexToPixel(bottomMost);
+            var left = layout.HexToPixel(leftMost);
+            var right = layout.HexToPixel(rightMost);
+            double dragbuffer = _view.Layout.size.X;
+
+            return !(top.Y > _screenHeight - dragbuffer || bottom.Y < dragbuffer ||
+                     right.X < dragbuffer || left.X > _screenWidth - dragbuffer);
         }
 
         public override void UpdateInactive(GameTime gameTime, ref GameState _gameState)
@@ -645,93 +687,92 @@ namespace HiveOnline
             if (string.IsNullOrWhiteSpace(message))
                 return;
 
+            if (message.StartsWith("MOVE|", StringComparison.OrdinalIgnoreCase))
+                ProcessRemoteMove(message);
+            else
+                ProcessControlMessage(message);
+        }
+
+        private void ProcessControlMessage(string message)
+        {
             if (message.Equals("REMATCH_START", StringComparison.OrdinalIgnoreCase))
-            {
                 RestartRequested = true;
-                return;
-            }
-
-            if (message.Equals("REMATCH_REQUESTED", StringComparison.OrdinalIgnoreCase))
-            {
+            else if (message.Equals("REMATCH_REQUESTED", StringComparison.OrdinalIgnoreCase))
                 _rematchRequestedByOpponent = true;
-                return;
-            }
-
-            if (message.Equals("OPPONENT_DISCONNECTED", StringComparison.OrdinalIgnoreCase))
-            {
-                _opponentLeft = true;
-                if (!GameOver)
-                {
-                    _playingState = PlayingState.Won;
-                    _board.CurrentTurn = "Opponent disconnected. You win!";
-                }
-                return;
-            }
-
-            if (message.Equals("PASS", StringComparison.OrdinalIgnoreCase))
-            {
-                if (_rules.TryPass(_opponentTeam).IsValid)
-                {
-                    if (_rules.IsFinished)
-                    {
-                        CheckNetworkResult();
-                    }
-                    else
-                    {
-                        _playingState = PlayingState.YourTurn;
-                        UpdateTurnDisplay();
-                        _board.CurrentTurn = "Your Turn - opponent had no moves and was skipped";
-                    }
-                }
-                return;
-            }
-
-            if (message.StartsWith("CHAT|", StringComparison.OrdinalIgnoreCase))
-            {
-                var text = message.Substring(5);
-                if (!string.IsNullOrWhiteSpace(text))
-                {
-                    _board.ChatWindow.ChatMessages.Push(new ChatMessage
-                    {
-                        Message = text,
-                        PlayerName = _board.OpponentName,
-                        PlayerTeam = 2
-                    });
-                    _board.ChatWindow.HasUnread = _board.ChatWindow.IsCollapsed;
-                }
-                return;
-            }
-
-            if (message.StartsWith("MOVE_REJECTED", StringComparison.OrdinalIgnoreCase))
-            {
+            else if (message.Equals("OPPONENT_DISCONNECTED", StringComparison.OrdinalIgnoreCase))
+                HandleOpponentDisconnected();
+            else if (message.Equals("PASS", StringComparison.OrdinalIgnoreCase))
+                HandleOpponentPass();
+            else if (message.StartsWith("CHAT|", StringComparison.OrdinalIgnoreCase))
+                HandleIncomingChat(message.Substring(5));
+            else if (message.StartsWith("MOVE_REJECTED", StringComparison.OrdinalIgnoreCase))
                 _board.CurrentTurn = message;
+        }
+
+        private void HandleOpponentDisconnected()
+        {
+            _opponentLeft = true;
+            if (GameOver)
+                return;
+
+            _playingState = PlayingState.Won;
+            _board.CurrentTurn = "Opponent disconnected. You win!";
+        }
+
+        private void HandleOpponentPass()
+        {
+            if (!_rules.TryPass(_opponentTeam).IsValid)
+                return;
+
+            if (_rules.IsFinished)
+            {
+                CheckNetworkResult();
                 return;
             }
 
-            if (!message.StartsWith("MOVE|", StringComparison.OrdinalIgnoreCase))
+            _playingState = PlayingState.YourTurn;
+            UpdateTurnDisplay();
+            _board.CurrentTurn = "Your Turn - opponent had no moves and was skipped";
+        }
+
+        private void HandleIncomingChat(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
                 return;
 
+            _board.ChatWindow.ChatMessages.Push(new ChatMessage
+            {
+                Message = text,
+                PlayerName = _board.OpponentName,
+                PlayerTeam = 2
+            });
+            _board.ChatWindow.HasUnread = _board.ChatWindow.IsCollapsed;
+        }
+
+        private static Hex ParseHex(string coordinates)
+        {
+            var parts = coordinates.Split(',');
+            if (parts.Length != 3)
+                throw new FormatException("Hex needs three coordinates.");
+            return new Hex(int.Parse(parts[0]), int.Parse(parts[1]), int.Parse(parts[2]));
+        }
+
+        // MOVE|team|type|from|to[|copiedBug[|warpTarget]]
+        private void ProcessRemoteMove(string message)
+        {
             var parts = message.Split('|');
             if (parts.Length < 5)
                 return;
 
             try
             {
-                var teamValue = parts[1];
-                var typeValue = parts[2];
-                var fromCoords = parts[3].Split(',');
-                var toCoords = parts[4].Split(',');
-
-                if (fromCoords.Length != 3 || toCoords.Length != 3)
-                    return;
-
-                if (!Enum.TryParse<BugTeam>(teamValue, true, out var team) ||
-                    !Enum.TryParse<BugType>(typeValue, true, out var type) ||
+                if (!Enum.TryParse<BugTeam>(parts[1], true, out var team) ||
+                    !Enum.TryParse<BugType>(parts[2], true, out var type) ||
                     team == BugTeam.Blank || type == BugType.Blank)
                     return;
 
-                var fromHex = new Hex(int.Parse(fromCoords[0]), int.Parse(fromCoords[1]), int.Parse(fromCoords[2]));
-                var toHex = new Hex(int.Parse(toCoords[0]), int.Parse(toCoords[1]), int.Parse(toCoords[2]));
+                var fromHex = ParseHex(parts[3]);
+                var toHex = ParseHex(parts[4]);
 
                 BugType? copiedBug = null;
                 if (parts.Length > 5 && Enum.TryParse<BugType>(parts[5], true, out var parsedCopy))
@@ -741,31 +782,28 @@ namespace HiveOnline
                 if (remoteTile == null)
                     return;
 
-                Hex? warpTarget = null;
-                if (parts.Length > 6)
-                {
-                    var warpCoords = parts[6].Split(',');
-                    warpTarget = new Hex(int.Parse(warpCoords[0]), int.Parse(warpCoords[1]), int.Parse(warpCoords[2]));
-                }
-
+                Hex? warpTarget = parts.Length > 6 ? ParseHex(parts[6]) : null;
                 if (!TryApplyMove(remoteTile, fromHex, toHex, team, out _, copiedBug, warpTarget))
                     return;
 
                 if (team == _opponentTeam)
-                {
-                    _opponentTurnCount++;
-                    _playingState = PlayingState.YourTurn;
-                    UpdateTurnDisplay();
-                    if (IsNetworkGame)
-                        CheckNetworkResult();
-                    else
-                        CheckWinCondition();
-                }
+                    StartLocalTurnAfterRemoteMove();
             }
             catch
             {
                 // Ignore malformed network move payloads instead of crashing the game.
             }
+        }
+
+        private void StartLocalTurnAfterRemoteMove()
+        {
+            _opponentTurnCount++;
+            _playingState = PlayingState.YourTurn;
+            UpdateTurnDisplay();
+            if (IsNetworkGame)
+                CheckNetworkResult();
+            else
+                CheckWinCondition();
         }
 
         private ITile GetTileForRemoteMove(BugTeam team, BugType bugType, Hex fromHex, Hex toHex)
@@ -793,7 +831,7 @@ namespace HiveOnline
             if (_rules.WinningTeam == null)
             {
                 _playingState = PlayingState.Draw;
-                _board.CurrentTurn = _rules.Board.Tiles.Values.Any(t => t.Type == BugType.QueenBee) && BothQueensSurrounded()
+                _board.CurrentTurn = _rules.Board.Tiles.Values.Any(t => t.Type == BugType.QueenBee) && _board.BothQueensSurrounded()
                     ? "Draw! Both Queens are surrounded!"
                     : "Draw! Neither player can move.";
             }
@@ -825,66 +863,30 @@ namespace HiveOnline
             if (requestedTile == null || requestedTile.Team != team)
                 return false;
 
-            var isPlacement = !_board.ContainsTile(requestedTile);
+            if (_board.ContainsTile(requestedTile))
+            {
+                if (!_board.TryMovePiece(requestedTile, destination, copiedBug, warpTarget, out appliedTile))
+                    return false;
 
-            if (isPlacement)
+                // A warp moves another piece, so nothing was placed.
+                if (!warpTarget.HasValue)
+                    OnPiecePlaced(appliedTile);
+            }
+            else
             {
                 var pile = PileFor(team);
                 if (MustPlayQueen(requestedTile) || !pile.CalculateAvailable(_board, team).Any(hex => hex == destination))
                     return false;
 
                 appliedTile = pile.GetTile(requestedTile.Type);
-            }
-            else
-            {
-                if (!_board.Tiles.TryGetValue(from.GetHashCode(), out var boardTile) || boardTile != requestedTile)
-                    return false;
-
-                var chooser = requestedTile as IChoosesAbility;
-                var warping = chooser is not null && warpTarget.HasValue;
-                if (chooser is not null)
-                {
-                    chooser.Choice = copiedBug;
-                    chooser.Target = warpTarget;
-                }
-
-                var allowed = chooser is not null
-                    ? chooser.IsSelectionValid(_board) && (warping || requestedTile.CanMove(_board)) &&
-                      chooser.GetDestinations(_board).Any(hex => hex == destination)
-                    : requestedTile.CanMove(_board) && requestedTile.CanMoveTo(_board, destination);
-                if (!allowed)
-                {
-                    chooser?.ClearChoice();
-                    return false;
-                }
-
-                _board.ClearStunned();
-                if (warping)
-                {
-                    PillbugWarp.Apply(_board, warpTarget.Value, destination);
-                    chooser.Target = null;
-                    appliedTile = requestedTile;
-                    _board.SelectedTile = null;
-                    _board.ClearAvailableTiles();
-                    return true;
-                }
-
-                _board.RemoveTile(boardTile);
-                appliedTile = requestedTile;
+                appliedTile.Location = destination;
+                _board.AddTile(appliedTile);
+                OnPiecePlaced(appliedTile);
             }
 
-            appliedTile.Location = destination;
-            _board.AddTile(appliedTile);
-            OnPiecePlaced(appliedTile);
             _board.SelectedTile = null;
             _board.ClearAvailableTiles();
             return true;
-        }
-
-        private void ClearAbilityChoices(BugTeam team)
-        {
-            foreach (var chooser in _board.Tiles.Values.Where(t => t.Team == team).OfType<IChoosesAbility>())
-                chooser.ClearChoice();
         }
 
         private void SwitchTurns()
@@ -901,14 +903,14 @@ namespace HiveOnline
                 _playingState = PlayingState.YourTurn;
             }
 
-            ClearAbilityChoices(_playingState == PlayingState.YourTurn ? _playerTeam : _opponentTeam);
+            _board.ClearAbilityChoices(_playingState == PlayingState.YourTurn ? _playerTeam : _opponentTeam);
             UpdateTurnDisplay();
         }
 
         private bool CheckWinCondition()
         {
-            var opponentSurrounded = _board.Tiles.Values.Any(t => t.Team == _opponentTeam && t.Type == BugType.QueenBee && IsQueenSurrounded(t));
-            var playerSurrounded = _board.Tiles.Values.Any(t => t.Team == _playerTeam && t.Type == BugType.QueenBee && IsQueenSurrounded(t));
+            var opponentSurrounded = _board.IsQueenSurrounded(_opponentTeam);
+            var playerSurrounded = _board.IsQueenSurrounded(_playerTeam);
 
             if (opponentSurrounded && playerSurrounded)
             {
@@ -932,24 +934,6 @@ namespace HiveOnline
             }
 
             return false;
-        }
-
-        private bool BothQueensSurrounded()
-        {
-            var queens = _board.Tiles.Values.Where(t => t.Type == BugType.QueenBee).ToList();
-            return queens.Count == 2 && queens.All(IsQueenSurrounded);
-        }
-
-        private bool IsQueenSurrounded(ITile queen)
-        {
-            // Check if all 6 neighbors contain any pieces (friendly or enemy)
-            for (int i = 0; i < 6; i++)
-            {
-                var neighbor = queen.Location.Neighbor(i);
-                if (!_board.ContainsTile(neighbor))
-                    return false; // Found an empty space, not surrounded
-            }
-            return true; // All 6 neighbors contain pieces
         }
 
         private void EndLocalTurn()
@@ -1074,15 +1058,7 @@ namespace HiveOnline
 
             var newLayout = new Layout(_view.Layout.orientation, new HexPoint(newSize, newSize), _view.Layout.origin);
 
-            var topMostPixel = newLayout.HexToPixel(topMost);
-            var bottomMostPixel = newLayout.HexToPixel(bottomMost);
-            var leftMostPixel = newLayout.HexToPixel(leftMost);
-            var rightMostPixel = newLayout.HexToPixel(rightMost);
-
-            double dragbuffer = _view.Layout.size.X;
-
-            if (topMostPixel.Y > _screenHeight - dragbuffer || bottomMostPixel.Y < dragbuffer ||
-                rightMostPixel.X < dragbuffer || leftMostPixel.X > _screenWidth - dragbuffer)
+            if (!ExtremesFitOnScreen(newLayout))
                 return _view.Layout.size;
 
             return new HexPoint(newSize, newSize);
@@ -1098,15 +1074,7 @@ namespace HiveOnline
 
             var newLayout = new Layout(_view.Layout.orientation, _view.Layout.size, _view.Layout.origin + mouseDragChange);
 
-            var topMostPixel = newLayout.HexToPixel(topMost);
-            var bottomMostPixel = newLayout.HexToPixel(bottomMost);
-            var leftMostPixel = newLayout.HexToPixel(leftMost);
-            var rightMostPixel = newLayout.HexToPixel(rightMost);
-
-            double dragbuffer = _view.Layout.size.X;
-
-            if (topMostPixel.Y > _screenHeight - dragbuffer || bottomMostPixel.Y < dragbuffer ||
-                rightMostPixel.X < dragbuffer || leftMostPixel.X > _screenWidth - dragbuffer)
+            if (!ExtremesFitOnScreen(newLayout))
                 return _view.Layout.origin;
 
             return _view.Layout.origin + mouseDragChange;

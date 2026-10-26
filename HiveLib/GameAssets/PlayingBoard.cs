@@ -63,6 +63,67 @@ namespace HiveOnline.GameAssets
             }
         }
 
+        public void ClearAbilityChoices(BugTeam team)
+        {
+            foreach (var chooser in _tiles.Values.Where(t => t.Team == team).OfType<IChoosesAbility>())
+                chooser.ClearChoice();
+        }
+
+        // A queen is surrounded when all six neighbours hold a piece, friendly or not.
+        public bool IsQueenSurrounded(ITile queen) =>
+            Enumerable.Range(0, 6).All(i => ContainsTile(queen.Location.Neighbor(i)));
+
+        public bool IsQueenSurrounded(BugTeam team) =>
+            _tiles.Values.Any(t => t.Team == team && t.Type == BugType.QueenBee && IsQueenSurrounded(t));
+
+        public bool BothQueensSurrounded()
+        {
+            var queens = _tiles.Values.Where(t => t.Type == BugType.QueenBee).ToList();
+            return queens.Count == 2 && queens.All(IsQueenSurrounded);
+        }
+
+        // Validates and applies the move of a piece already on the board, including choice abilities such as a copy or warp.
+        public bool TryMovePiece(ITile piece, Hex destination, BugType? copiedBug, Hex? warpTarget, out ITile movedPiece)
+        {
+            movedPiece = null;
+            if (!_tiles.TryGetValue(piece.Location.GetHashCode(), out var boardTile) || boardTile != piece)
+                return false;
+
+            var chooser = piece as IChoosesAbility;
+            var warping = chooser is not null && warpTarget.HasValue;
+            if (chooser is not null)
+            {
+                chooser.Choice = copiedBug;
+                chooser.Target = warpTarget;
+            }
+
+            var allowed = chooser is not null
+                ? chooser.IsSelectionValid(this) && (warping || piece.CanMove(this)) &&
+                  chooser.GetDestinations(this).Any(hex => hex == destination)
+                : piece.CanMove(this) && piece.CanMoveTo(this, destination);
+            if (!allowed)
+            {
+                chooser?.ClearChoice();
+                return false;
+            }
+
+            ClearStunned();
+            if (warping)
+            {
+                PillbugWarp.Apply(this, warpTarget.Value, destination);
+                chooser.Target = null;
+            }
+            else
+            {
+                RemoveTile(boardTile);
+                piece.Location = destination;
+                AddTile(piece);
+            }
+
+            movedPiece = piece;
+            return true;
+        }
+
         public void AddTile(ITile tile)
         {
             LastMovedHex = tile.Location;
