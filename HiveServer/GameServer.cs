@@ -204,15 +204,12 @@ namespace HiveServer
             await AnnounceMatch(game, playerOne, playerTwo);
         }
 
-        private async Task AnnounceMatch(HiveGame game, ConnectedHiveClient playerOne, ConnectedHiveClient playerTwo, string expansions = "")
+        private async Task AnnounceMatch(HiveGame game, ConnectedHiveClient playerOne, ConnectedHiveClient playerTwo)
         {
             await playerOne.SendMessage($"MATCHED {playerOne.Identifier} {playerTwo.Identifier}");
             await playerTwo.SendMessage($"MATCHED {playerTwo.Identifier} {playerOne.Identifier}");
-            if (expansions.Length > 0)
-            {
-                await playerOne.SendMessage($"EXPANSIONS|{expansions}");
-                await playerTwo.SendMessage($"EXPANSIONS|{expansions}");
-            }
+            await playerOne.SendMessage($"EXPANSIONS|{game.EnabledExpansionCodes}");
+            await playerTwo.SendMessage($"EXPANSIONS|{game.EnabledExpansionCodes}");
             await playerOne.SendMessage($"OPPONENT_NAME|{playerTwo.Name ?? "Opponent"}");
             await playerTwo.SendMessage($"OPPONENT_NAME|{playerOne.Name ?? "Opponent"}");
             await playerOne.SendMessage("YOU_ARE_PLAYER_1");

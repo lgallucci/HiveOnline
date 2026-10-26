@@ -7,11 +7,11 @@ namespace HiveOnline
     // Expansion bugs travel over the network and into the lobby as single letters (L, P, M).
     static class ExpansionCodes
     {
-        private static readonly (BugType Type, char Code)[] Map =
+        private static readonly (BugType Type, char Code, string Name)[] Map =
         {
-            (BugType.LadyBug, 'L'),
-            (BugType.PillBug, 'P'),
-            (BugType.Mosquito, 'M'),
+            (BugType.LadyBug, 'L', "Ladybug"),
+            (BugType.PillBug, 'P', "Pillbug"),
+            (BugType.Mosquito, 'M', "Mosquito"),
         };
 
         public static string ToCodes(IEnumerable<BugType> expansions)
@@ -24,6 +24,13 @@ namespace HiveOnline
         {
             codes ??= string.Empty;
             return Map.Where(m => codes.Contains(m.Code)).Select(m => m.Type).ToArray();
+        }
+
+        public static string ToDisplayNames(string codes)
+        {
+            codes ??= string.Empty;
+            var names = Map.Where(m => codes.Contains(m.Code)).Select(m => m.Name);
+            return string.Join(", ", names);
         }
     }
 }

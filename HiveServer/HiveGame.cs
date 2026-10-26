@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using HiveContracts;
 using HiveLib.Rules;
+using HiveOnline.GameAssets;
 
 namespace HiveServer
 {
@@ -12,19 +13,39 @@ namespace HiveServer
 
         public ConnectedHiveClient PlayerOne { get; }
         public ConnectedHiveClient PlayerTwo { get; }
-        public HiveGameState State { get; private set; } = new HiveGameState();
+        private readonly BugType[] _selectedExpansions;
+        public string EnabledExpansionCodes { get; }
+        public HiveGameState State { get; private set; }
 
-        public HiveGame(ConnectedHiveClient playerOne, ConnectedHiveClient playerTwo)
+        public HiveGame(ConnectedHiveClient playerOne, ConnectedHiveClient playerTwo, string expansionCodes = "")
         {
             PlayerOne = playerOne ?? throw new ArgumentNullException(nameof(playerOne));
             PlayerTwo = playerTwo ?? throw new ArgumentNullException(nameof(playerTwo));
+            expansionCodes ??= string.Empty;
+            EnabledExpansionCodes = new string("LPM".Where(code => expansionCodes.Contains(code)).ToArray());
+            _selectedExpansions = ParseExpansionCodes(EnabledExpansionCodes);
+            State = CreateState();
         }
 
         public void Reset()
         {
-            State = new HiveGameState();
+            State = CreateState();
             PlayerOne.WantsRematch = false;
             PlayerTwo.WantsRematch = false;
+        }
+
+        private HiveGameState CreateState() => new(new PlayingBoard(_selectedExpansions));
+
+        private static BugType[] ParseExpansionCodes(string codes)
+        {
+            var expansions = new List<BugType>();
+            if (codes.Contains('L'))
+                expansions.Add(BugType.LadyBug);
+            if (codes.Contains('P'))
+                expansions.Add(BugType.PillBug);
+            if (codes.Contains('M'))
+                expansions.Add(BugType.Mosquito);
+            return expansions.ToArray();
         }
 
         public IReadOnlyCollection<ConnectedHiveClient> Players => new[] { PlayerOne, PlayerTwo };

@@ -121,7 +121,7 @@ public class TwoClientTests
         var (a, b, aId, bId) = await EnterLobbies();
 
         await a.Client.Challenge(bId);
-        await b.WaitFor(m => m == $"CHALLENGED|{aId},Alice");
+        await b.WaitFor(m => m == $"CHALLENGED|{aId},Alice|");
         await b.Client.AcceptChallenge(aId);
 
         await a.WaitFor(m => m == "OPPONENT_NAME|Bob");
@@ -145,12 +145,14 @@ public class TwoClientTests
         var aId = IdOf(listForB, "Alice (L)");
 
         await a.Client.Challenge(IdOf(listForA, "Bob (PM)"));
-        await b.WaitFor(m => m == $"CHALLENGED|{aId},Alice (L)");
+        await b.WaitFor(m => m == $"CHALLENGED|{aId},Alice|PM");
         await b.Client.AcceptChallenge(aId);
 
         await a.WaitFor(m => m == "EXPANSIONS|PM");
         await b.WaitFor(m => m == "EXPANSIONS|PM");
         await a.WaitFor(m => m == "OPPONENT_NAME|Bob");
+        await a.Client.SendMove("PillBug", 0, 0, 0, 0, 0, 0, "LIGHT");
+        await b.WaitFor(m => m.StartsWith("MOVE|LIGHT|PillBug|0,0,0|0,0,0"));
     }
 
     [TestMethod]

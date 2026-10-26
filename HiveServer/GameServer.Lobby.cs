@@ -74,7 +74,7 @@ namespace HiveServer
                         outbox.Add((previous, $"CHALLENGE_CANCELED|{client.Identifier}"));
 
                     _challenges[client.Identifier] = target.Identifier;
-                    outbox.Add((target, $"CHALLENGED|{client.Identifier},{LobbyLabel(client)}"));
+                    outbox.Add((target, $"CHALLENGED|{client.Identifier},{client.Name}|{target.Expansions}"));
                     Trace($"{client.Name} challenged {target.Name}");
                 }
             }
@@ -129,7 +129,7 @@ namespace HiveServer
                     RemoveFromLobbyLocked(client, outbox, false);
 
                     // The challenger plays first (Light).
-                    game = new HiveGame(challenger, client);
+                    game = new HiveGame(challenger, client, client.Expansions);
                     challenger.CurrentGame = game;
                     client.CurrentGame = game;
                     _games.Add(game);
@@ -144,7 +144,7 @@ namespace HiveServer
             }
 
             await Flush(outbox);
-            await AnnounceMatch(game, challenger, client, client.Expansions);
+            await AnnounceMatch(game, challenger, client);
         }
 
         // Removes the client from the lobby and cancels every challenge it is part of.

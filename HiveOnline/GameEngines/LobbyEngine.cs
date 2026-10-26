@@ -16,7 +16,7 @@ namespace HiveOnline.GameEngines
         private readonly HiveGameClient _client;
         private readonly ConcurrentQueue<string> _messages = new();
         private readonly List<(Guid Id, string Name)> _players = new();
-        private readonly List<(Guid Id, string Name)> _incoming = new();
+        private readonly List<(Guid Id, string Name, string ExpansionCodes)> _incoming = new();
         private Guid? _challengedId;
         private string _status = "Waiting for other players...";
         private int _assignedTeam = -1;
@@ -100,7 +100,7 @@ namespace HiveOnline.GameEngines
                         if (fields.Length > 1 && ParsePlayer(fields[1]) is { } challenger)
                         {
                             _incoming.RemoveAll(c => c.Id == challenger.Id);
-                            _incoming.Add(challenger);
+                            _incoming.Add((challenger.Id, challenger.Name, fields.Length > 2 ? fields[2] : string.Empty));
                         }
                         break;
                     case "CHALLENGE_CANCELED":
@@ -144,10 +144,14 @@ namespace HiveOnline.GameEngines
 
         private const int IncomingStartY = 80;
 
-        // Each challenge is a stacked Accept / Decline pair under the Back button.
-        private Rectangle AcceptBounds(int index) => new Rectangle(20, IncomingStartY + index * (RowHeight * 2 + 10), 260, RowHeight - 6);
+        private const int ExpansionInfoHeight = 72;
+        private const int ChallengeGroupHeight = ExpansionInfoHeight + RowHeight + 10;
 
-        private Rectangle DeclineBounds(int index) => new Rectangle(20, IncomingStartY + index * (RowHeight * 2 + 10) + RowHeight, 260, RowHeight - 6);
+        private Rectangle GameExpansionsBounds(int index) => new Rectangle(20, IncomingStartY + index * ChallengeGroupHeight, 420, ExpansionInfoHeight);
+
+        private Rectangle AcceptBounds(int index) => new Rectangle(20, IncomingStartY + index * ChallengeGroupHeight + ExpansionInfoHeight, 210, RowHeight - 6);
+
+        private Rectangle DeclineBounds(int index) => new Rectangle(230, IncomingStartY + index * ChallengeGroupHeight + ExpansionInfoHeight, 210, RowHeight - 6);
 
         public override void Draw(GraphicsEngine graphicsEngine)
         {
@@ -163,14 +167,23 @@ namespace HiveOnline.GameEngines
             for (var i = 0; i < _players.Count; i++)
             {
                 var row = PlayerRow(i);
-                var label = _players[i].Id == _challengedId ? $"{_players[i].Name} (challenge sent)" : _players[i].Name;
+                var incomingChallenge = _incoming.FirstOrDefault(c => c.Id == _players[i].Id);
+                var label = incomingChallenge.Id != Guid.Empty
+                    ? $"{incomingChallenge.Name} (challenge received)"
+                    : _players[i].Id == _challengedId ? $"{_players[i].Name} (challenge sent)" : _players[i].Name;
                 graphicsEngine.DrawButton(row, label, row.Contains(mouse.X, mouse.Y));
             }
 
             for (var i = 0; i < _incoming.Count; i++)
             {
+                var expansions = ExpansionCodes.ToDisplayNames(_incoming[i].ExpansionCodes);
+                var expansionLabel = expansions.Length == 0
+                    ? "GAME EXPANSIONS\nBase Hive"
+                    : $"GAME EXPANSIONS\n{expansions.Replace(", ", " / ")}";
+                var expansionBounds = GameExpansionsBounds(i);
                 var accept = AcceptBounds(i);
                 var decline = DeclineBounds(i);
+                graphicsEngine.DrawButton(expansionBounds, expansionLabel, false);
                 graphicsEngine.DrawButton(accept, $"Accept {_incoming[i].Name}", accept.Contains(mouse.X, mouse.Y));
                 graphicsEngine.DrawButton(decline, "Decline " + _incoming[i].Name, decline.Contains(mouse.X, mouse.Y));
             }
