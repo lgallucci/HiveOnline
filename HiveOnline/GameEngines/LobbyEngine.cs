@@ -142,7 +142,7 @@ namespace HiveOnline.GameEngines
 
         private Rectangle PlayerRow(int index) => new Rectangle(_width - 420, FirstRowY + index * RowHeight, 400, RowHeight - 6);
 
-        private const int IncomingStartY = 80;
+        private const int IncomingStartY = 100;
 
         private const int ExpansionInfoHeight = 72;
         private const int ChallengeGroupHeight = ExpansionInfoHeight + RowHeight + 10;
