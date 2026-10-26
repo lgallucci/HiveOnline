@@ -30,7 +30,7 @@ namespace HiveOnline.GameEngines
         private MouseState _previousMouse = Mouse.GetState();
 
         private const int RowHeight = 44;
-        private const int FirstRowY = 120;
+        private const int FirstRowY = 90;
 
         public BugTeam AssignedTeam => _assignedTeam == 1 ? BugTeam.Dark : BugTeam.Light;
         public string OpponentName => _opponentName;
@@ -142,7 +142,7 @@ namespace HiveOnline.GameEngines
 
         private Rectangle PlayerRow(int index) => new Rectangle(_width - 420, FirstRowY + index * RowHeight, 400, RowHeight - 6);
 
-        private const int IncomingStartY = 100;
+        private const int IncomingStartY = 110;
 
         private const int ExpansionInfoHeight = 72;
         private const int ChallengeGroupHeight = ExpansionInfoHeight + RowHeight + 10;
@@ -158,7 +158,12 @@ namespace HiveOnline.GameEngines
             _width = graphicsEngine.ScreenSize.X;
             var mouse = Mouse.GetState();
 
-            graphicsEngine.DrawStringTop("Lobby - click a player to challenge them", Color.DeepPink, 60);
+            graphicsEngine.DrawStringTop("Lobby - click a player to challenge them", Color.DeepPink, 0);
+            var advertisedExpansions = ExpansionCodes.ToDisplayNames(_expansionCodes);
+            graphicsEngine.DrawStringTop(
+                $"You advertise: {(advertisedExpansions.Length == 0 ? "Base Hive" : advertisedExpansions.Replace(", ", " / "))}",
+                Color.White, 30);
+            graphicsEngine.DrawStringTop("Challenging a player uses their advertised expansions.", Color.White, 60);
             graphicsEngine.DrawButton(BackBounds, "Back", BackBounds.Contains(mouse.X, mouse.Y));
 
             if (_players.Count == 0)

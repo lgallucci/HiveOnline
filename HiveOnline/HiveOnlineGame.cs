@@ -197,14 +197,14 @@ namespace HiveOnline
                         _selectedExpansions = lobbyEngine.GameExpansions.ToArray();
                         Window.Title = $"Hive - {_team}";
                     }
-                    _gameEngine = new RunningGameEngine(_screenWidth, _screenHeight, _team, networkClient, useAi, _playerName, _opponentName, _selectedExpansions);
+                    _gameEngine = new RunningGameEngine(_screenWidth, _screenHeight, _team, _gameMode, networkClient, _playerName, _opponentName, _selectedExpansions);
                     SetWindowSize();
                 }
                 if (_gameEngine is RunningGameEngine finished && finished.RestartRequested)
                 {
                     finished.Detach();
                     var rematchClient = _gameMode == GameMode.Multiplayer ? _hiveClient : null;
-                    _gameEngine = new RunningGameEngine(_screenWidth, _screenHeight, _team, rematchClient, _gameMode == GameMode.LocalAi, _playerName, _opponentName, _selectedExpansions);
+                    _gameEngine = new RunningGameEngine(_screenWidth, _screenHeight, _team, _gameMode, rematchClient, _playerName, _opponentName, _selectedExpansions);
                     SetWindowSize();
                 }
                 if (_gameState == GameState.OpeningScreen && _previousState != GameState.OpeningScreen)
@@ -248,9 +248,6 @@ namespace HiveOnline
             _gameEngine.Draw(_graphicsEngine);
 
             //_graphicsEngine.DrawFps(framesPerSecond);
-
-            if (_gameEngine is not OpeningScreenEngine)
-                _graphicsEngine.DrawStringTop(_gameMode.ToString(), Color.White);
 
             _graphicsEngine.EndSprites();
 

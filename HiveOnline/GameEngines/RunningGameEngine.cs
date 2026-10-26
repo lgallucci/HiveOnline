@@ -34,7 +34,7 @@ namespace HiveOnline
         private readonly BoardViewState _view;
         private readonly BoardRenderer _boardRenderer;
         private readonly HiveGameState _rules;
-        private readonly bool _useAI;
+        private readonly GameMode _gameMode;
         private readonly HiveGameClient _networkClient;
         private readonly ConcurrentQueue<string> _pendingNetworkMessages = new ConcurrentQueue<string>();
         private BugTeam _playerTeam;
@@ -45,25 +45,20 @@ namespace HiveOnline
 
         public bool RestartRequested { get; private set; }
         private BugTeam _opponentTeam;
-        private bool IsNetworkGame => _networkClient != null;
-
-        // Hot-seat game: both players share the screen and the active player's pile is shown at the bottom.
-        private bool IsLocalTwoPlayer => !_useAI && _networkClient == null;
-
         // Game rule tracking
         private int _playerTurnCount = 0;  // Light player's turn count
         private int _opponentTurnCount = 0; // Dark player's turn count
         private bool _playerQueenPlaced = false;
         private bool _opponentQueenPlaced = false;
 
-        public RunningGameEngine(int screenWidth, int screenHeight, BugTeam team, HiveGameClient networkClient = null, bool useAi = true, string playerName = null, string opponentName = null, IReadOnlyCollection<BugType> selectedExpansions = null)
+        public RunningGameEngine(int screenWidth, int screenHeight, BugTeam team, GameMode gameMode, HiveGameClient networkClient = null, string playerName = null, string opponentName = null, IReadOnlyCollection<BugType> selectedExpansions = null)
         {
             _screenWidth = screenWidth;
             _screenHeight = screenHeight;
             _networkClient = networkClient;
-            _useAI = useAi;
             _playerTeam = team;
             _opponentTeam = team == BugTeam.Light ? BugTeam.Dark : BugTeam.Light;
+            _gameMode = gameMode;
             _board = new PlayingBoard(selectedExpansions);
             if (team == BugTeam.Dark)
             {
@@ -72,7 +67,7 @@ namespace HiveOnline
             }
             _rules = new HiveGameState(_board, BugTeam.Light);
             _view = new BoardViewState(screenWidth, screenHeight);
-            _view.ChatVisible = _networkClient != null;
+            _view.ChatVisible = _gameMode == GameMode.Multiplayer;
             _boardRenderer = new BoardRenderer();
             _boardRenderer.Resize(_view, _board);
             _ai = new SimpleAI(_board, _opponentTeam);
@@ -158,10 +153,12 @@ namespace HiveOnline
             var quitMouse = Mouse.GetState();
             _graphicsEngine.DrawButton(QuitButton, "Quit", QuitButton.Contains(quitMouse.X, quitMouse.Y));
 
+            _graphicsEngine.DrawStringTop(_gameMode.ToString(), Color.White);
+
             if (_confirmingQuit)
             {
                 _graphicsEngine.DrawPanel(QuitPanel);
-                _graphicsEngine.DrawStringTop(IsNetworkGame && !GameOver ? "Leave the game? Your opponent will be notified." : "Leave the game?",
+                _graphicsEngine.DrawStringTop(_gameMode == GameMode.Multiplayer && !GameOver ? "Leave the game? Your opponent will be notified." : "Leave the game?",
                     Microsoft.Xna.Framework.Color.White, _view.ScreenSize.Y / 2 - 60);
                 _graphicsEngine.DrawButton(QuitYesButton, "Yes, quit", QuitYesButton.Contains(quitMouse.X, quitMouse.Y));
                 _graphicsEngine.DrawButton(QuitNoButton, "Keep playing", QuitNoButton.Contains(quitMouse.X, quitMouse.Y));
@@ -179,7 +176,7 @@ namespace HiveOnline
             if (_rematchRequestedByMe)
                 return;
 
-            if (IsNetworkGame)
+            if (_gameMode == GameMode.Multiplayer)
             {
                 _rematchRequestedByMe = true;
                 _ = _networkClient.SendMessage("REMATCH");
@@ -403,12 +400,12 @@ namespace HiveOnline
 
         private void AdvanceAfterLocalMove()
         {
-            if (_useAI)
+            if (_gameMode == GameMode.LocalAi)
             {
                 SwitchTurns();
                 CheckWinCondition();
             }
-            else if (IsNetworkGame)
+            else if (_gameMode == GameMode.Multiplayer)
             {
                 _playerTurnCount++;
                 _playingState = PlayingState.OpponentsTurn;
@@ -455,7 +452,7 @@ namespace HiveOnline
 
         private void ProcessNetworkMessages()
         {
-            if (IsNetworkGame && !_connectionLost && !GameOver && !_networkClient.IsConnected)
+            if (_gameMode == GameMode.Multiplayer && !_connectionLost && !GameOver && !_networkClient.IsConnected)
             {
                 // The server ends the game when we drop, so there is nothing to resume.
                 _connectionLost = true;
@@ -476,7 +473,7 @@ namespace HiveOnline
 
         private bool HasLegalMove(BugTeam team)
         {
-            if (!_useAI)
+            if (_gameMode != GameMode.LocalAi)
                 return _rules.HasLegalMove(team);
 
             var isPlayer = team == _playerTeam;
@@ -501,7 +498,7 @@ namespace HiveOnline
                 return;
 
             DeselectAll();
-            if (_useAI)
+            if (_gameMode == GameMode.LocalAi)
             {
                 if (++_aiPassStreak >= 2)
                 {
@@ -512,7 +509,7 @@ namespace HiveOnline
             }
             else
             {
-                if (IsNetworkGame)
+                if (_gameMode == GameMode.Multiplayer)
                     _ = _networkClient.SendMessage("PASS");
                 _rules.TryPass(_playerTeam);
                 if (_rules.IsFinished)
@@ -521,7 +518,7 @@ namespace HiveOnline
                     return;
                 }
 
-                if (IsLocalTwoPlayer)
+                if (_gameMode == GameMode.LocalTwoPlayer)
                 {
                     SwapSides();
                     _board.CurrentTurn = $"{_board.UserName}'s Turn - {_board.OpponentName} had no legal moves and was skipped";
@@ -634,7 +631,7 @@ namespace HiveOnline
 
         private bool HandleAiTurn(GameTime gameTime)
         {
-            if (!_useAI || _playingState != PlayingState.OpponentsTurn)
+            if (_gameMode != GameMode.LocalAi || _playingState != PlayingState.OpponentsTurn)
                 return false;
 
             if (_board.Tiles.Count > 0 && !HasLegalMove(_opponentTeam))
@@ -669,7 +666,7 @@ namespace HiveOnline
 
         private bool MustPlayQueen(ITile tile)
         {
-            if (!_useAI)
+            if (_gameMode != GameMode.LocalAi)
                 return _rules.GetTurnCount(_playerTeam) >= 3 && !_rules.IsQueenPlaced(_playerTeam) && tile.Type != BugType.QueenBee;
 
             // Check if Queen must be placed this turn
@@ -800,7 +797,7 @@ namespace HiveOnline
             _opponentTurnCount++;
             _playingState = PlayingState.YourTurn;
             UpdateTurnDisplay();
-            if (IsNetworkGame)
+            if (_gameMode == GameMode.Multiplayer)
                 CheckNetworkResult();
             else
                 CheckWinCondition();
@@ -850,7 +847,7 @@ namespace HiveOnline
         private bool TryApplyMove(ITile requestedTile, Hex from, Hex destination,
             BugTeam team, out ITile appliedTile, BugType? copiedBug = null, Hex? warpTarget = null)
         {
-            if (!_useAI)
+            if (_gameMode != GameMode.LocalAi)
             {
                 var result = _rules.TryApplyMove(new HiveMove(team, requestedTile.Type, from, destination, copiedBug, warpTarget));
                 appliedTile = result.IsValid ? _board.Tiles[(warpTarget.HasValue ? from : destination).GetHashCode()] : null;
@@ -973,11 +970,11 @@ namespace HiveOnline
         private void UpdateTurnDisplay()
         {
             string turnText = _playingState == PlayingState.YourTurn ? "Your Turn" : "Opponent's Turn";
-            if (IsLocalTwoPlayer)
+            if (_gameMode == GameMode.LocalTwoPlayer)
                 turnText = $"{_board.UserName}'s Turn";
             
             // Add warnings if Queen must be played
-            if (IsLocalTwoPlayer)
+            if (_gameMode == GameMode.LocalTwoPlayer)
             {
                 if (_rules.GetTurnCount(_playerTeam) >= 3 && !_rules.IsQueenPlaced(_playerTeam))
                     turnText += " (Queen required!)";
@@ -1022,7 +1019,7 @@ namespace HiveOnline
         private bool CanMoveAnyPiece(BugTeam team)
         {
             // Can't move pieces until your Queen is placed
-            if (!_useAI)
+            if (_gameMode != GameMode.LocalAi)
                 return _rules.IsQueenPlaced(team);
 
             if (team == _playerTeam)
