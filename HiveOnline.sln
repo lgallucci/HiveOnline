@@ -21,11 +21,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{3F21B325
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Game", "Game", "{589E866E-481B-4FE5-BC14-E4A83EA46190}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NetworkingTest", "NetworkingTest\NetworkingTest.csproj", "{EE206B54-FCC1-4CDC-8D4D-5B9C8C01D46F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NetworkingTest", "tests\NetworkingTest\NetworkingTest.csproj", "{EE206B54-FCC1-4CDC-8D4D-5B9C8C01D46F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HiveServerTest", "HiveServerTest\HiveServerTest.csproj", "{5C22BE29-92B1-4494-94EC-1A89C25C18B5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HiveServerTest", "tests\HiveServerTest\HiveServerTest.csproj", "{5C22BE29-92B1-4494-94EC-1A89C25C18B5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HiveLibTests", "HiveLibTests\HiveLibTests.csproj", "{88FF8DD7-0CE3-4DE0-BFB5-2F47FF6D065B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HiveLibTests", "tests\HiveLibTests\HiveLibTests.csproj", "{88FF8DD7-0CE3-4DE0-BFB5-2F47FF6D065B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
