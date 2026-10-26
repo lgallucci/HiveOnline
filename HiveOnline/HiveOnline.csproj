@@ -6,6 +6,16 @@
     <ApplicationIcon>Icon.ico</ApplicationIcon>
     <SelfContained>true</SelfContained>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <AssemblyName>HiveOnline</AssemblyName>
+    <Product>Hive Online</Product>
+    <AssemblyTitle>Hive Online</AssemblyTitle>
+    <Description>Play the Hive board game against the computer, a friend, or online.</Description>
+    <Company>lgallucci</Company>
+    <Authors>lgallucci</Authors>
+    <Copyright>Copyright © 2026 lgallucci</Copyright>
+    <Version>1.0.1</Version>
+    <InformationalVersion>1.0.1</InformationalVersion>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>

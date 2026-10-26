@@ -53,7 +53,7 @@ sign_windows_exe() {
   echo "Signed $exe"
 }
 
-windows() {
+publish_windows() {
   rm -rf artifacts/win-x64
   dotnet publish HiveOnline -c Release -r win-x64 -p:PublishSingleFile=true \
     -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -o artifacts/win-x64
@@ -62,7 +62,7 @@ windows() {
   echo "Created artifacts/HiveOnline-win-x64.zip"
 }
 
-flatpak() {
+publish_flatpak() {
   rm -rf artifacts/linux-x64
   dotnet publish HiveOnline -c Release -r linux-x64 -p:DebugType=None -o artifacts/linux-x64
   # OSTree needs a filesystem with hardlink/permission support, so build outside the repo by default.
@@ -74,8 +74,8 @@ flatpak() {
 }
 
 case "$target" in
-  windows) windows ;;
-  flatpak) flatpak ;;
-  all) windows; flatpak ;;
+  windows) publish_windows ;;
+  flatpak) publish_flatpak ;;
+  all) publish_windows; publish_flatpak ;;
   *) echo "usage: $0 [windows|flatpak]"; exit 1 ;;
 esac

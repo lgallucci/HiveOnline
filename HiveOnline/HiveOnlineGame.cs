@@ -42,7 +42,7 @@ namespace HiveOnline
         int frameCount = 0;
         TimeSpan frameTimer = new TimeSpan(0);
 
-        public HiveOnlineGame(string address = "34.29.94.144", int port = 7777)
+        public HiveOnlineGame(string address, int port)
         {
             _address = address;
             _port = port;
