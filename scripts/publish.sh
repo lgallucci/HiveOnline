@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Requires org.freedesktop.Platform and Sdk 24.08 (flatpak install flathub org.freedesktop.Sdk//24.08).
 # Builds distributable packages into ./artifacts.
-#   scripts/publish.sh windows   -> artifacts/HiveOnline-win-x64.zip (single HiveOnline.exe + Content)
+#   scripts/publish.sh windows   -> artifacts/HiveOnline-win-x64.zip (HiveOnline.exe + SDL2.dll/soft_oal.dll + Content)
 #   scripts/publish.sh flatpak   -> artifacts/HiveOnline.flatpak (needs flatpak-builder)
 #   scripts/publish.sh           -> both
 #
@@ -56,7 +56,7 @@ sign_windows_exe() {
 publish_windows() {
   rm -rf artifacts/win-x64
   dotnet publish HiveOnline -c Release -r win-x64 -p:PublishSingleFile=true \
-    -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -o artifacts/win-x64
+    -p:DebugType=None -o artifacts/win-x64
   sign_windows_exe artifacts/win-x64/HiveOnline.exe
   (cd artifacts/win-x64 && rm -f ../HiveOnline-win-x64.zip && zip -qr ../HiveOnline-win-x64.zip .)
   echo "Created artifacts/HiveOnline-win-x64.zip"

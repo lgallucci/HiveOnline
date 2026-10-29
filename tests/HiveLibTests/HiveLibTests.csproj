@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\HiveLib\HiveLib.csproj" />
+    <ProjectReference Include="..\..\HiveLib\HiveLib.csproj" />
   </ItemGroup>
 
 </Project>
